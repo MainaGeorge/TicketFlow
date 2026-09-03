@@ -27,14 +27,37 @@ public class BookingsController(AppDbContext context) : ControllerBase
             .FirstOrDefaultAsync(s => s.Id == bookingRequest.SeatId);
 
         if (seat is null)
-            return NotFound("Seat not found");
+            return NotFound(new ProblemDetails
+            {
+                Status = StatusCodes.Status404NotFound,
+                Title = "Seat not found.",
+                Detail = $"Seat {bookingRequest.SeatId} not found.",
+                Instance = HttpContext.Request.Path
+            });
 
         if (seat.Booking is not null)
-            return Conflict("Seat is already booked");
+            return Conflict(new ProblemDetails
+            {
+                Status = StatusCodes.Status409Conflict,
+                Title = "Seat is already booked.",
+                Detail = $"Seat {bookingRequest.SeatId} is already booked.",
+                Instance = HttpContext.Request.Path
+            });
+
+        if (seat.Event.EventDate <= DateTime.UtcNow)
+        {
+            return Conflict(new ProblemDetails
+            {
+                Status = StatusCodes.Status409Conflict,
+                Title = "Event has already started.",
+                Detail = "Tickets cannot be booked for an event that has already started.",
+                Instance = HttpContext.Request.Path
+            });
+        }
 
         var booking = new Models.Booking
         {
-            SeatId = bookingRequest.SeatId,
+            SeatId = bookingRequest.SeatId!.Value,
             CreatedAt = DateTime.UtcNow,
             UserId = userId
         };
@@ -47,7 +70,13 @@ public class BookingsController(AppDbContext context) : ControllerBase
         }
         catch (DbUpdateException)
         {
-            return Conflict("Seat is already booked.");
+            return Conflict(new ProblemDetails
+            {
+                Status = StatusCodes.Status409Conflict,
+                Title = "Seat is already booked.",
+                Detail = $"Selected seat {bookingRequest.SeatId} was booked by another user.",
+                Instance = HttpContext.Request.Path
+            });
         }
 
         var bookingDto = new BookingDto
@@ -55,7 +84,11 @@ public class BookingsController(AppDbContext context) : ControllerBase
             Id = booking.Id,
             UserId = booking.UserId,
             SeatId = booking.SeatId,
-            CreatedAt = booking.CreatedAt
+            CreatedAt = booking.CreatedAt,
+            EventId = seat.Event.Id,
+            SeatRow = seat.Row,
+            SeatNumber = seat.Number,
+            Price = seat.Price,
         };
 
         return CreatedAtAction(nameof(GetBooking), new { id = booking.Id }, bookingDto);

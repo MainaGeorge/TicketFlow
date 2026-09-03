@@ -14,11 +14,22 @@ public class EventsController(AppDbContext context) : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateEvent([FromBody] CreateEventRequest request)
     {
+        if (!request.EventDate.HasValue || request.EventDate <= DateTime.UtcNow)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Invalid event date.",
+                Detail = "Event date must be in the future.",
+                Instance = HttpContext.Request.Path
+            });
+        }
+
         var newEvent = new Models.Event
         {
-            Name = request.Name,
-            EventDate = request.EventDate,
-            Venue = request.Venue
+            Name = request.Name!,
+            EventDate = request.EventDate.Value,
+            Venue = request.Venue!
         };
         context.Events.Add(newEvent);
         await context.SaveChangesAsync();
@@ -72,13 +83,19 @@ public class EventsController(AppDbContext context) : ControllerBase
     {
         var @event = await context.Events.FindAsync(eventId);
         if (@event == null)
-            return NotFound();
+            return NotFound(new ProblemDetails
+            {
+                Status = StatusCodes.Status404NotFound,
+                Title = "Event not found.",
+                Detail = $"Event {eventId} not found.",
+                Instance = HttpContext.Request.Path
+            });
 
         var newSeat = new Models.Seat
         {
             Row = request.Row,
-            Number = request.Number,
-            Price = request.Price,
+            Number = request.Number!.Value,
+            Price = request.Price!.Value,
             EventId = eventId
         };
         context.Seats.Add(newSeat);

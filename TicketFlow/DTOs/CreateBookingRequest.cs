@@ -1,6 +1,9 @@
-﻿namespace TicketFlow.DTOs;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace TicketFlow.DTOs;
 
 public class CreateBookingRequest
 {
-    public required int SeatId { get; init; }
+    [Range(1, int.MaxValue)]
+    public required int? SeatId { get; init; }
 }
