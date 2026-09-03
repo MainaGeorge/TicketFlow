@@ -86,7 +86,7 @@ public class EventsController(AppDbContext context) : ControllerBase
 
         var seatDto = new SeatDto { Id = newSeat.Id, Row = newSeat.Row, Number = newSeat.Number, Price = newSeat.Price, EventId = newSeat.EventId };
 
-        return CreatedAtAction(nameof(GetEventById), new { id = @event.Id }, seatDto);
+        return CreatedAtAction(nameof(GetSeat), new { eventId = @event.Id, seatId = newSeat.Id }, seatDto);
     }
 
     [HttpGet("{eventId}/seats/{seatId}")]
