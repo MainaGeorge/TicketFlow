@@ -1,4 +1,6 @@
-﻿namespace TicketFlow.Models;
+﻿using TicketFlow.Models;
+
+namespace TicketFlow.DTOs;
 
 public class RefreshToken
 {

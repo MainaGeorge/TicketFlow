@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using TicketFlow.DTOs;
 using TicketFlow.Models;
 
 namespace TicketFlow.Data;
@@ -16,12 +17,52 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         modelBuilder.Entity<Seat>()
             .HasKey(s => s.Id);
+            
+        modelBuilder.Entity<Seat>()
+            .Property(s => s.Row)
+            .IsRequired();
+
+        modelBuilder.Entity<Seat>()
+            .Property(s => s.Number)
+            .IsRequired();
+
+        modelBuilder.Entity<Seat>()
+            .Property(s => s.Price)
+            .IsRequired();
 
         modelBuilder.Entity<Booking>()
             .HasKey(b => b.Id);
 
+        modelBuilder.Entity<Booking>()
+            .Property(b => b.CreatedAt)
+            .IsRequired();
+
+        modelBuilder.Entity<Booking>()
+            .Property(b => b.UserId)
+            .IsRequired();
+
+        modelBuilder.Entity<Booking>()
+            .Property(b => b.SeatId)
+            .IsRequired();
+
         modelBuilder.Entity<Event>()
             .HasKey(p => p.Id);
+
+        modelBuilder.Entity<Event>()
+            .Property(p => p.Id)
+            .IsRequired();
+
+        modelBuilder.Entity<Event>()
+            .Property(e => e.Name)
+            .IsRequired();
+
+        modelBuilder.Entity<Event>()
+            .Property(e => e.Venue)
+            .IsRequired();
+
+        modelBuilder.Entity<Event>()
+            .Property(e => e.EventDate)
+            .IsRequired();
 
         modelBuilder.Entity<Event>()
             .HasMany(e => e.Seats)

@@ -1,4 +1,4 @@
-﻿namespace TicketFlow.Models;
+﻿namespace TicketFlow.DTOs;
 
 public class TokenResponse
 {

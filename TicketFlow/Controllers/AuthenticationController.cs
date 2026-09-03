@@ -6,6 +6,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using TicketFlow.Data;
+using TicketFlow.DTOs;
 using TicketFlow.Models;
 
 namespace TicketFlow.Controllers;
@@ -35,7 +36,7 @@ public class AuthenticationController(IConfiguration configuration, UserManager<
         if (!result.Succeeded)
             return BadRequest(result.Errors);
 
-        return Ok(new { Message = "User registered successfully" });
+        return Created();
     }
 
     [HttpPost("login")]
@@ -57,6 +58,20 @@ public class AuthenticationController(IConfiguration configuration, UserManager<
         var tokens = await GenerateTokensAsync(user);
 
         return Ok(tokens);
+    }
+
+    [HttpDelete("deactivate")]
+    public async Task<IActionResult> DeactivateAccount(DeactivateUserRequest request)
+    {
+        var user = await userManager.FindByEmailAsync(request.Email);
+
+        if (user == null)
+            return Unauthorized();
+
+        user.IsActive = false;
+        await appDbContext.SaveChangesAsync();
+
+        return Ok();
     }
 
     private string GenerateAccessToken(User user, DateTimeOffset expiresAt)
