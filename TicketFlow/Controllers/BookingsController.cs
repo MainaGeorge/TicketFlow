@@ -40,7 +40,15 @@ public class BookingsController(AppDbContext context) : ControllerBase
         };
 
         context.Bookings.Add(booking);
-        await context.SaveChangesAsync();
+
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict("Seat is already booked.");
+        }
 
         var bookingDto = new BookingDto
         {
