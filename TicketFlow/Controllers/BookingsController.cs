@@ -19,7 +19,10 @@ public class BookingsController(AppDbContext context, ILogger<BookingsController
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         if (userId is null)
+        {
+            logger.LogWarning("Booking request without authenticated user.");
             return Unauthorized();
+        }
 
         var seat = await context
             .Seats
@@ -28,6 +31,8 @@ public class BookingsController(AppDbContext context, ILogger<BookingsController
             .FirstOrDefaultAsync(s => s.Id == bookingRequest.SeatId);
 
         if (seat is null)
+        {
+            logger.LogWarning("Seat not found. SeatId: {SeatId}", bookingRequest.SeatId);
             return NotFound(new ProblemDetails
             {
                 Status = StatusCodes.Status404NotFound,
@@ -35,8 +40,11 @@ public class BookingsController(AppDbContext context, ILogger<BookingsController
                 Detail = $"Seat {bookingRequest.SeatId} not found.",
                 Instance = HttpContext.Request.Path
             });
+        }
 
         if (seat.Booking is not null)
+        {
+            logger.LogInformation("Booking rejected because seat is already booked. SeatId: {SeatId}, UserId: {UserId}", seat.Id, userId);
             return Conflict(new ProblemDetails
             {
                 Status = StatusCodes.Status409Conflict,
@@ -44,6 +52,7 @@ public class BookingsController(AppDbContext context, ILogger<BookingsController
                 Detail = $"Seat {bookingRequest.SeatId} is already booked.",
                 Instance = HttpContext.Request.Path
             });
+        }
 
         if (seat.Event.EventDate <= DateTime.UtcNow)
         {
@@ -104,6 +113,9 @@ public class BookingsController(AppDbContext context, ILogger<BookingsController
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         if (userId == null)
+        {
+            logger.LogWarning("Booking request without authenticated user.");
+
             return Unauthorized(new ProblemDetails
             {
                 Status = StatusCodes.Status401Unauthorized,
@@ -111,6 +123,7 @@ public class BookingsController(AppDbContext context, ILogger<BookingsController
                 Detail = "You must be logged in to view your bookings.",
                 Instance = HttpContext.Request.Path
             });
+        }
 
         var booking = await context
             .Bookings
@@ -136,6 +149,8 @@ public class BookingsController(AppDbContext context, ILogger<BookingsController
             .FirstOrDefaultAsync();
 
         if (booking == null)
+        {
+            logger.LogWarning("Booking not found. BookingId: {BookingId}", id);
             return NotFound(new ProblemDetails
             {
                 Status = StatusCodes.Status404NotFound,
@@ -143,6 +158,7 @@ public class BookingsController(AppDbContext context, ILogger<BookingsController
                 Detail = $"The specified booking with id {id} could not be found.",
                 Instance = HttpContext.Request.Path
             });
+        }
 
         return Ok(booking);
     }
@@ -153,7 +169,10 @@ public class BookingsController(AppDbContext context, ILogger<BookingsController
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         if (userId == null)
+        {
+            logger.LogWarning("Booking request without authenticated user.");
             return Unauthorized();
+        }
 
         var bookings = await context
             .Bookings

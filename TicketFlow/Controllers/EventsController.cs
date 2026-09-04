@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using TicketFlow.Data;
 using TicketFlow.DTOs;
 
@@ -14,6 +15,21 @@ public class EventsController(AppDbContext context, ILogger<EventsController> lo
     [HttpPost]
     public async Task<IActionResult> CreateEvent([FromBody] CreateEventRequest request)
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId == null)
+        {
+            logger.LogWarning("Event creation request without authenticated user.");
+
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized.",
+                Detail = "You must be logged in to create events.",
+                Instance = HttpContext.Request.Path
+            });
+        }
+
         if (!request.EventDate.HasValue || request.EventDate <= DateTime.UtcNow)
         {
             return BadRequest(new ProblemDetails
@@ -42,6 +58,21 @@ public class EventsController(AppDbContext context, ILogger<EventsController> lo
     [HttpGet("{id}")]
     public async Task<IActionResult> GetEventById(int id)
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId == null)
+        {
+            logger.LogWarning("Event view request without an authenticated user. EventId: {EventId}", id);
+
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized.",
+                Detail = "You must be logged in to view events.",
+                Instance = HttpContext.Request.Path
+            });
+        }
+
         var @event = await context.Events
             .Where(e => e.Id == id)
             .Select(e => new EventDto
@@ -56,6 +87,8 @@ public class EventsController(AppDbContext context, ILogger<EventsController> lo
             .FirstOrDefaultAsync();
 
         if (@event == null)
+        {
+            logger.LogWarning("Event not found. EventId: {EventId}", id);
             return NotFound(new ProblemDetails
             {
                 Status = StatusCodes.Status404NotFound,
@@ -63,6 +96,7 @@ public class EventsController(AppDbContext context, ILogger<EventsController> lo
                 Detail = "The specified event could not be found.",
                 Instance = HttpContext.Request.Path
             });
+        }
 
         return Ok(@event);
     }
@@ -70,6 +104,20 @@ public class EventsController(AppDbContext context, ILogger<EventsController> lo
     [HttpGet]
     public async Task<IActionResult> GetAllEvents()
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId == null)
+        {
+            logger.LogWarning("Event view request without an authenticated user.");
+
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized.",
+                Detail = "You must be logged in to view events.",
+                Instance = HttpContext.Request.Path
+            });
+        }
         var events = await context
             .Events
             .Include(e => e.Seats)
@@ -92,6 +140,8 @@ public class EventsController(AppDbContext context, ILogger<EventsController> lo
     {
         var @event = await context.Events.FindAsync(eventId);
         if (@event == null)
+        {
+            logger.LogWarning("Event not found. EventId: {EventId}", eventId);
             return NotFound(new ProblemDetails
             {
                 Status = StatusCodes.Status404NotFound,
@@ -99,6 +149,7 @@ public class EventsController(AppDbContext context, ILogger<EventsController> lo
                 Detail = $"Event {eventId} not found.",
                 Instance = HttpContext.Request.Path
             });
+        }
 
         var newSeat = new Models.Seat
         {
@@ -110,7 +161,7 @@ public class EventsController(AppDbContext context, ILogger<EventsController> lo
         context.Seats.Add(newSeat);
         await context.SaveChangesAsync();
 
-        logger.LogInformation("Seat created: {SeatId}, Row: {SeatRow}, Number: {SeatNumber}, Price: {SeatPrice}, EventId: {EventId}", newSeat.Id, newSeat.Row, newSeat.Number, newSeat.Price, newSeat.EventId);
+        logger.LogInformation("Seat created Id: {SeatId}, Row: {SeatRow}, Number: {SeatNumber}, Price: {SeatPrice}, EventId: {EventId}", newSeat.Id, newSeat.Row, newSeat.Number, newSeat.Price, newSeat.EventId);
 
         var seatDto = new SeatDto { Id = newSeat.Id, Row = newSeat.Row, Number = newSeat.Number, Price = newSeat.Price, EventId = newSeat.EventId };
 
@@ -136,6 +187,8 @@ public class EventsController(AppDbContext context, ILogger<EventsController> lo
             .FirstOrDefaultAsync();
 
         if (seat == null)
+        {
+            logger.LogWarning("Seat not found. EventId: {EventId}, SeatId: {SeatId}", eventId, seatId);
             return NotFound(new ProblemDetails
             {
                 Status = StatusCodes.Status404NotFound,
@@ -143,6 +196,7 @@ public class EventsController(AppDbContext context, ILogger<EventsController> lo
                 Detail = "The specified seat could not be found.",
                 Instance = HttpContext.Request.Path
             });
+        }
 
         return Ok(seat);
     }

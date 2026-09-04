@@ -7,7 +7,12 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
-        logger.LogError(exception, "An unhandled exception occurred. TraceId: {TraceId}", httpContext.TraceIdentifier);
+        logger.LogError(
+            exception,
+            "Unhandled exception. Method: {Method}, Path: {Path}, TraceId: {TraceId}",
+            httpContext.Request.Method,
+            httpContext.Request.Path,
+            httpContext.TraceIdentifier);
 
         var problemDetails = new ProblemDetails
         {
