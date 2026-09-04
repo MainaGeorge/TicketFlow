@@ -1,6 +1,6 @@
-﻿using Azure.Core;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using TicketFlow.Data;
@@ -70,7 +70,8 @@ public class BookingsController(AppDbContext context, ILogger<BookingsController
             await context.SaveChangesAsync();
             logger.LogInformation("Booking created successfully for user {UserId} and seat {SeatId}.", userId, bookingRequest.SeatId);
         }
-        catch (DbUpdateException)
+        // we need to catch duplicate-key database error during this operation means the seat uniqueness constraint was hit."
+        catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlException && sqlException.Number is 2601 or 2627)
         {
             logger.LogWarning("Concurrent booking attempt detected for SeatId: {SeatId}, UserId: {UserId}", bookingRequest.SeatId, userId);
             return Conflict(new ProblemDetails
