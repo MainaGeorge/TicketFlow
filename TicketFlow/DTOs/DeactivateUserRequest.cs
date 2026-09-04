@@ -2,7 +2,17 @@
 
 namespace TicketFlow.DTOs;
 
-public class DeactivateUserRequest
+public class DeactivateUserRequest : BaseEmailRequest
+{
+}
+
+
+public class  ReactivateUserRequest:BaseEmailRequest
+{
+}
+
+
+public class BaseEmailRequest
 {
     [Required]
     [EmailAddress]

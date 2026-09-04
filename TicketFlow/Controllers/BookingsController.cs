@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Azure.Core;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -10,7 +11,7 @@ namespace TicketFlow.Controllers;
 [Route("api/bookings")]
 [Authorize]
 [ApiController]
-public class BookingsController(AppDbContext context) : ControllerBase
+public class BookingsController(AppDbContext context, ILogger<BookingsController> logger) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> CreateBooking([FromBody] CreateBookingRequest bookingRequest)
@@ -67,9 +68,11 @@ public class BookingsController(AppDbContext context) : ControllerBase
         try
         {
             await context.SaveChangesAsync();
+            logger.LogInformation("Booking created successfully for user {UserId} and seat {SeatId}.", userId, bookingRequest.SeatId);
         }
         catch (DbUpdateException)
         {
+            logger.LogWarning("Concurrent booking attempt detected for SeatId: {SeatId}, UserId: {UserId}", bookingRequest.SeatId, userId);
             return Conflict(new ProblemDetails
             {
                 Status = StatusCodes.Status409Conflict,
@@ -94,14 +97,19 @@ public class BookingsController(AppDbContext context) : ControllerBase
         return CreatedAtAction(nameof(GetBooking), new { id = booking.Id }, bookingDto);
     }
 
-
     [HttpGet("{id}")]
     public async Task<IActionResult> GetBooking(int id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         if (userId == null)
-            return Unauthorized();
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized.",
+                Detail = "You must be logged in to view your bookings.",
+                Instance = HttpContext.Request.Path
+            });
 
         var booking = await context
             .Bookings
@@ -127,7 +135,13 @@ public class BookingsController(AppDbContext context) : ControllerBase
             .FirstOrDefaultAsync();
 
         if (booking == null)
-            return NotFound();
+            return NotFound(new ProblemDetails
+            {
+                Status = StatusCodes.Status404NotFound,
+                Title = "Booking not found.",
+                Detail = $"The specified booking with id {id} could not be found.",
+                Instance = HttpContext.Request.Path
+            });
 
         return Ok(booking);
     }
@@ -162,9 +176,6 @@ public class BookingsController(AppDbContext context) : ControllerBase
                 }
             })
             .ToListAsync();
-
-        if (bookings is null)
-            return NotFound();
 
         return Ok(bookings);
     }

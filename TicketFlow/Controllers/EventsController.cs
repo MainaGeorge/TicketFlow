@@ -9,7 +9,7 @@ namespace TicketFlow.Controllers;
 [Route("api/events")]
 [ApiController]
 [Authorize]
-public class EventsController(AppDbContext context) : ControllerBase
+public class EventsController(AppDbContext context, ILogger<EventsController> logger) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> CreateEvent([FromBody] CreateEventRequest request)
@@ -33,6 +33,9 @@ public class EventsController(AppDbContext context) : ControllerBase
         };
         context.Events.Add(newEvent);
         await context.SaveChangesAsync();
+
+        logger.LogInformation("Event created: {EventId}, Name: {EventName}, Venue: {EventVenue}, Date: {EventDate}", newEvent.Id, newEvent.Name, newEvent.Venue, newEvent.EventDate);
+
         return CreatedAtAction(nameof(GetEventById), new { id = newEvent.Id }, new EventDto { Id = newEvent.Id, Name = newEvent.Name, Venue = newEvent.Venue, EventDate = newEvent.EventDate });
     }
 
@@ -53,7 +56,13 @@ public class EventsController(AppDbContext context) : ControllerBase
             .FirstOrDefaultAsync();
 
         if (@event == null)
-            return NotFound();
+            return NotFound(new ProblemDetails
+            {
+                Status = StatusCodes.Status404NotFound,
+                Title = "Event not found.",
+                Detail = "The specified event could not be found.",
+                Instance = HttpContext.Request.Path
+            });
 
         return Ok(@event);
     }
@@ -101,6 +110,8 @@ public class EventsController(AppDbContext context) : ControllerBase
         context.Seats.Add(newSeat);
         await context.SaveChangesAsync();
 
+        logger.LogInformation("Seat created: {SeatId}, Row: {SeatRow}, Number: {SeatNumber}, Price: {SeatPrice}, EventId: {EventId}", newSeat.Id, newSeat.Row, newSeat.Number, newSeat.Price, newSeat.EventId);
+
         var seatDto = new SeatDto { Id = newSeat.Id, Row = newSeat.Row, Number = newSeat.Number, Price = newSeat.Price, EventId = newSeat.EventId };
 
         return CreatedAtAction(nameof(GetSeat), new { eventId = @event.Id, seatId = newSeat.Id }, seatDto);
@@ -125,7 +136,13 @@ public class EventsController(AppDbContext context) : ControllerBase
             .FirstOrDefaultAsync();
 
         if (seat == null)
-            return NotFound();
+            return NotFound(new ProblemDetails
+            {
+                Status = StatusCodes.Status404NotFound,
+                Title = "Seat not found.",
+                Detail = "The specified seat could not be found.",
+                Instance = HttpContext.Request.Path
+            });
 
         return Ok(seat);
     }
@@ -147,9 +164,6 @@ public class EventsController(AppDbContext context) : ControllerBase
                 BookingId = s.Booking != null ? s.Booking.Id : null
             })
             .ToListAsync();
-
-        if (seat == null)
-            return NotFound();
 
         return Ok(seat);
     }
