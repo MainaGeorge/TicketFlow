@@ -135,7 +135,7 @@ public class EventsController(AppDbContext context, ILogger<EventsController> lo
         return Ok(events);
     }
 
-    [HttpPost("{eventId}/seats")]
+    [HttpPost("{eventId:int}/seats")]
     public async Task<IActionResult> CreateSeat(int eventId, [FromBody] CreateSeatRequest request)
     {
         var @event = await context.Events.FindAsync(eventId);
@@ -168,7 +168,7 @@ public class EventsController(AppDbContext context, ILogger<EventsController> lo
         return CreatedAtAction(nameof(GetSeat), new { eventId = @event.Id, seatId = newSeat.Id }, seatDto);
     }
 
-    [HttpGet("{eventId}/seats/{seatId}")]
+    [HttpGet("{eventId:int}/seats/{seatId:int}")]
     public async Task<IActionResult> GetSeat(int eventId, int seatId)
     {
         var seat = await context
@@ -201,7 +201,7 @@ public class EventsController(AppDbContext context, ILogger<EventsController> lo
         return Ok(seat);
     }
 
-    [HttpGet("{eventId}/seats")]
+    [HttpGet("{eventId:int}/seats")]
     public async Task<IActionResult> GetSeats(int eventId)
     {
         var seat = await context

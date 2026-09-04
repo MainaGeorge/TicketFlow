@@ -107,7 +107,7 @@ public class BookingsController(AppDbContext context, ILogger<BookingsController
         return CreatedAtAction(nameof(GetBooking), new { id = booking.Id }, bookingDto);
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("{id:int}")]
     public async Task<IActionResult> GetBooking(int id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
