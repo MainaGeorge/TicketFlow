@@ -105,7 +105,7 @@ public class AuthenticationController(IConfiguration configuration, UserManager<
         });
     }
 
-    [HttpPost]
+    [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest registrationDto)
     {
         var existingUser = await userManager.FindByEmailAsync(registrationDto.Email);
