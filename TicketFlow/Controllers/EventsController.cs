@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -9,6 +10,7 @@ namespace TicketFlow.Controllers;
 
 [Route("api/events")]
 [ApiController]
+[ApiVersion("1.0")]
 [Authorize]
 public class EventsController(AppDbContext context, ILogger<EventsController> logger) : ControllerBase
 {

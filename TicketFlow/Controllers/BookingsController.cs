@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,7 @@ namespace TicketFlow.Controllers;
 
 [Route("api/bookings")]
 [Authorize]
+[ApiVersion("1.0")]
 [ApiController]
 public class BookingsController(AppDbContext context, ILogger<BookingsController> logger) : ControllerBase
 {

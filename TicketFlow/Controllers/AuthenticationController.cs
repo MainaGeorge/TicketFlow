@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -14,6 +15,7 @@ namespace TicketFlow.Controllers;
 
 [Route("api/auth")]
 [ApiController]
+[ApiVersion("1.0")]
 public class AuthenticationController(IConfiguration configuration, UserManager<User> userManager, AppDbContext appDbContext, ILogger<AuthenticationController> logger) : ControllerBase
 {
     private string GenerateAccessToken(User user, DateTimeOffset expiresAt)
