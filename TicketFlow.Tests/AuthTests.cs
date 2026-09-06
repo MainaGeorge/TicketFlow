@@ -2,8 +2,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Json;
-using TicketFlow.Data;
-using TicketFlow.Models;
+using TicketFlow.Presentation.Data;
+using TicketFlow.Presentation.Models;
 
 namespace TicketFlow.Tests;
 

@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TicketFlow\TicketFlow.csproj" />
+    <ProjectReference Include="..\TicketFlow.Presentation\TicketFlow.Presentation.csproj" />
   </ItemGroup>
 
   <ItemGroup>
