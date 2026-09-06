@@ -10,6 +10,7 @@ using System.Security.Claims;
 using TicketFlow.Presentation.Exceptions;
 using TicketFlow.Presentation.Swagger;
 using TicketFlow.Infrastructure;
+using TicketFlow.Application;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,6 +42,7 @@ builder.Services
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddApplication(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

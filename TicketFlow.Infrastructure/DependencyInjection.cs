@@ -2,8 +2,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using TicketFlow.Application.Bookings;
 using TicketFlow.Domain.Entities;
 using TicketFlow.Infrastructure.Persistence;
+using TicketFlow.Infrastructure.Persistence.Repositories;
 
 namespace TicketFlow.Infrastructure;
 
@@ -25,6 +27,8 @@ public static class DependencyInjection
             .AddEntityFrameworkStores<AppDbContext>()
             .AddUserManager<UserManager<User>>()
             .AddRoleManager<RoleManager<IdentityRole>>();
+
+        services.AddScoped<IBookingRepository, BookingRepository>();
 
         return services;
     }
