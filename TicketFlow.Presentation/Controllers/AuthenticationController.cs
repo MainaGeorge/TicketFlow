@@ -7,9 +7,9 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using TicketFlow.Presentation.Data;
+using TicketFlow.Domain.Entities;
+using TicketFlow.Infrastructure.Persistence;
 using TicketFlow.Presentation.DTOs;
-using TicketFlow.Presentation.Models;
 
 namespace TicketFlow.Presentation.Controllers;
 
@@ -59,7 +59,7 @@ public class AuthenticationController(IConfiguration configuration, UserManager<
         var accessToken = GenerateAccessToken(user, expiresAt);
         var refreshToken = GenerateRefreshToken();
 
-        var refreshTokenEntity = new RefreshToken
+        var refreshTokenEntity = new Domain.Entities.RefreshToken
         {
             Token = refreshToken,
             UserId = user.Id,
@@ -125,7 +125,7 @@ public class AuthenticationController(IConfiguration configuration, UserManager<
             });
         }
 
-        var user = new User
+        var user = new Domain.Entities.User
         {
             UserName = registrationDto.Email,
             Email = registrationDto.Email,

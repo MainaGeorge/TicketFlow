@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using TicketFlow.Presentation.Data;
+using TicketFlow.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace TicketFlow.Migrations
+namespace TicketFlow.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     [Migration("20260903051816_InitialCreate")]
@@ -25,7 +25,7 @@ namespace TicketFlow.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("TicketFlow.DTOs.RefreshToken", b =>
+            modelBuilder.Entity("TicketFlow.Domain.Entities", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -63,7 +63,7 @@ namespace TicketFlow.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
-            modelBuilder.Entity("TicketFlow.Models.Booking", b =>
+            modelBuilder.Entity("TicketFlow.Domain.Entities.Booking", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -95,7 +95,7 @@ namespace TicketFlow.Migrations
                     b.ToTable("Bookings");
                 });
 
-            modelBuilder.Entity("TicketFlow.Models.Event", b =>
+            modelBuilder.Entity("TicketFlow.Domain.Entities.Event", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -119,7 +119,7 @@ namespace TicketFlow.Migrations
                     b.ToTable("Events");
                 });
 
-            modelBuilder.Entity("TicketFlow.Models.Seat", b =>
+            modelBuilder.Entity("TicketFlow.Domain.Entities.Seat", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -153,7 +153,7 @@ namespace TicketFlow.Migrations
                     b.ToTable("Seats");
                 });
 
-            modelBuilder.Entity("TicketFlow.Models.User", b =>
+            modelBuilder.Entity("TicketFlow.Domain.Entities.User", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
@@ -219,9 +219,9 @@ namespace TicketFlow.Migrations
                     b.ToTable("User");
                 });
 
-            modelBuilder.Entity("TicketFlow.DTOs.RefreshToken", b =>
+            modelBuilder.Entity("TicketFlow.Domain.Entities", b =>
                 {
-                    b.HasOne("TicketFlow.Models.User", "User")
+                    b.HasOne("TicketFlow.Domain.Entities.User", "User")
                         .WithMany("RefreshTokens")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -230,15 +230,15 @@ namespace TicketFlow.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("TicketFlow.Models.Booking", b =>
+            modelBuilder.Entity("TicketFlow.Domain.Entities.Booking", b =>
                 {
-                    b.HasOne("TicketFlow.Models.Seat", "Seat")
+                    b.HasOne("TicketFlow.Domain.Entities.Seat", "Seat")
                         .WithOne("Booking")
-                        .HasForeignKey("TicketFlow.Models.Booking", "SeatId")
+                        .HasForeignKey("TicketFlow.Domain.Entities.Booking", "SeatId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("TicketFlow.Models.User", "User")
+                    b.HasOne("TicketFlow.Domain.Entities.User", "User")
                         .WithMany("Bookings")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -249,9 +249,9 @@ namespace TicketFlow.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("TicketFlow.Models.Seat", b =>
+            modelBuilder.Entity("TicketFlow.Domain.Entities.Seat", b =>
                 {
-                    b.HasOne("TicketFlow.Models.Event", "Event")
+                    b.HasOne("TicketFlow.Domain.Entities.Event", "Event")
                         .WithMany("Seats")
                         .HasForeignKey("EventId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -260,18 +260,18 @@ namespace TicketFlow.Migrations
                     b.Navigation("Event");
                 });
 
-            modelBuilder.Entity("TicketFlow.Models.Event", b =>
+            modelBuilder.Entity("TicketFlow.Domain.Entities.Event", b =>
                 {
                     b.Navigation("Seats");
                 });
 
-            modelBuilder.Entity("TicketFlow.Models.Seat", b =>
+            modelBuilder.Entity("TicketFlow.Domain.Entities.Seat", b =>
                 {
                     b.Navigation("Booking")
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("TicketFlow.Models.User", b =>
+            modelBuilder.Entity("TicketFlow.Domain.Entities.User", b =>
                 {
                     b.Navigation("Bookings");
 

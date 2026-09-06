@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace TicketFlow.Migrations
+namespace TicketFlow.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
     public partial class RefiningSeatModel : Migration

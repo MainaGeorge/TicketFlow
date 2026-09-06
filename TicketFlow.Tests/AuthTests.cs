@@ -2,8 +2,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Json;
-using TicketFlow.Presentation.Data;
-using TicketFlow.Presentation.Models;
+using TicketFlow.Domain.Entities;
+using TicketFlow.Infrastructure.Persistence;
 
 namespace TicketFlow.Tests;
 
@@ -16,7 +16,7 @@ public class AuthTests
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/auth/register", new { email = "alice@test.com", password = "Password123!", displayName = "Alice" });
-        Assert.Equal(System.Net.HttpStatusCode.Created, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
 
     [Fact]
@@ -26,7 +26,7 @@ public class AuthTests
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/auth/register", new { email = "alice.com is not an email", password = "Password123!", displayName = "Alice" });
-        Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public class AuthTests
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/auth/register", new { email = "alice.com is not an email", password = "abc", displayName = "Alice" });
-        Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -47,7 +47,7 @@ public class AuthTests
 
         await client.PostAsJsonAsync("/api/auth/register", new { email = "alice@email.com", password = "Password123!", displayName = "Alice" });
         var response = await client.PostAsJsonAsync("/api/auth/register", new { email = "alice@email.com", password = "Password123!", displayName = "Alice" });
-        Assert.Equal(System.Net.HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public class AuthTests
 
         var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new { email = "alice@email.com", password = "Password123!", displayName = "Alice" });
         var response = await client.PostAsJsonAsync("/api/auth/login", new { email = "alice@email.com", password = "Password123!", displayName = "Alice" });
-        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public class AuthTests
 
         var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new { email = "alice@email.com", password = "Password123!", displayName = "Alice" });
         var response = await client.PostAsJsonAsync("/api/auth/login", new { email = "alice@email.com", password = "Password12!", displayName = "Alice" });
-        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public class AuthTests
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/auth/login", new { email = "alice@email.com", password = "Password123!", displayName = "Alice" });
-        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]

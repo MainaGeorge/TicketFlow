@@ -1,6 +1,4 @@
-﻿using TicketFlow.Presentation.Models;
-
-namespace TicketFlow.Domain.Entities;
+﻿namespace TicketFlow.Domain.Entities;
 
 public class Booking
 {

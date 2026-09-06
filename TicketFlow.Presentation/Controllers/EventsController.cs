@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using TicketFlow.Presentation.Data;
+using TicketFlow.Infrastructure.Persistence;
 using TicketFlow.Presentation.DTOs;
 
 namespace TicketFlow.Presentation.Controllers;
@@ -43,7 +43,7 @@ public class EventsController(AppDbContext context, ILogger<EventsController> lo
             });
         }
 
-        var newEvent = new Models.Event
+        var newEvent = new Domain.Entities.Event
         {
             Name = request.Name!,
             EventDate = request.EventDate.Value,
@@ -153,7 +153,7 @@ public class EventsController(AppDbContext context, ILogger<EventsController> lo
             });
         }
 
-        var newSeat = new Models.Seat
+        var newSeat = new Domain.Entities.Seat
         {
             Row = request.Row,
             Number = request.Number!.Value,

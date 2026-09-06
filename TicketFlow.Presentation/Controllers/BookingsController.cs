@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using TicketFlow.Presentation.Data;
+using TicketFlow.Domain.Entities;
 using TicketFlow.Presentation.DTOs;
 
 namespace TicketFlow.Presentation.Controllers;
@@ -13,7 +13,7 @@ namespace TicketFlow.Presentation.Controllers;
 [Authorize]
 [ApiVersion("1.0")]
 [ApiController]
-public class BookingsController(AppDbContext context, ILogger<BookingsController> logger) : ControllerBase
+public class BookingsController(Infrastructure.Persistence.AppDbContext context, ILogger<BookingsController> logger) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> CreateBooking([FromBody] CreateBookingRequest bookingRequest)
@@ -67,7 +67,7 @@ public class BookingsController(AppDbContext context, ILogger<BookingsController
             });
         }
 
-        var booking = new Models.Booking
+        var booking = new Booking
         {
             SeatId = bookingRequest.SeatId!.Value,
             CreatedAt = DateTime.UtcNow,

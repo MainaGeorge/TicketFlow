@@ -2,7 +2,7 @@
 using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using TicketFlow.Presentation.Data;
+using TicketFlow.Infrastructure.Persistence;
 
 namespace TicketFlow.Tests;
 
