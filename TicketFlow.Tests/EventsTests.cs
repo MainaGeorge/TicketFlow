@@ -93,12 +93,19 @@ public class EventsTests
     [Theory]
     [InlineData("/api/events")]
     [InlineData("/api/events/1")]
-    public async Task GetEvents_WithoutCredentials_Returns401(string url)
+    public async Task GetEvents_WithoutCredentials_Returns200IfEventsExist(string url)
     {
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
 
+        var token = await TestHelpers.RegisterAndLogin(client, "test@user.com");
+        TestHelpers.SetBearerToken(client, token);
+
+        await client.PostAsJsonAsync("/api/events", new { name = "Rock Concert", venue = "London Arena", eventDate = DateTime.UtcNow.AddDays(30) });
+
+        TestHelpers.SetBearerToken(client, string.Empty);
+
         var response = await client.GetAsync(url);
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 }

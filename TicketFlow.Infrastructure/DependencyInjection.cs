@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TicketFlow.Application.Bookings;
+using TicketFlow.Application.Events;
+using TicketFlow.Application.Seats;
 using TicketFlow.Domain.Entities;
 using TicketFlow.Infrastructure.Persistence;
 using TicketFlow.Infrastructure.Persistence.Repositories;
@@ -29,6 +31,8 @@ public static class DependencyInjection
             .AddRoleManager<RoleManager<IdentityRole>>();
 
         services.AddScoped<IBookingRepository, BookingRepository>();
+        services.AddScoped<IEventRepository, EventRepository>();
+        services.AddScoped<ISeatsRepository, SeatsRepository>();
 
         return services;
     }

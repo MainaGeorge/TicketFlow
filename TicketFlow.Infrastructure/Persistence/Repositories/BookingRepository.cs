@@ -13,11 +13,18 @@ internal class BookingRepository(AppDbContext context) : IBookingRepository
         await context.Bookings.AddAsync(booking, cancellationToken);
     }
 
-    public async Task<BookingResult?> GetBookingAsync(int bookingId, string userId, CancellationToken cancellationToken = default)
+    public async Task<Booking?> GetBookingAsync(int bookingId, string userId, CancellationToken cancellationToken = default)
     {
         return await context.Bookings
             .Where(b => b.Id == bookingId && b.UserId == userId)
-            .Select(b => new BookingResult(userId, b.Id, b.CreatedAt, b.Seat))
+            .Select(b => new Booking
+            { 
+                Seat = b.Seat,
+                Id = b.Id,
+                CreatedAt = b.CreatedAt,
+                PaymentReference = b.PaymentReference,
+                UserId = b.UserId,
+            })
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
     }
 
@@ -31,11 +38,18 @@ internal class BookingRepository(AppDbContext context) : IBookingRepository
             .FirstOrDefaultAsync(s => s.Id == seatId, cancellationToken);
     }
 
-    public async Task<IEnumerable<BookingResult?>> GetUserBookingsAsync(string userId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Booking>> GetUserBookingsAsync(string userId, CancellationToken cancellationToken = default)
     {
         return await context.Bookings
             .Where(b => b.UserId == userId)
-            .Select(b => new BookingResult(userId, b.Id, b.CreatedAt, b.Seat))
+            .Select(b => new Booking
+            {
+                Seat = b.Seat,
+                Id = b.Id,
+                CreatedAt = b.CreatedAt,
+                PaymentReference = b.PaymentReference,
+                UserId = b.UserId,
+            })
             .ToListAsync(cancellationToken: cancellationToken);
     }
 

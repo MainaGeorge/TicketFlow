@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TicketFlow.Application.Bookings;
 using TicketFlow.Presentation.DTOs;
+using TicketFlow.Presentation.Mappings;
 
 namespace TicketFlow.Presentation.Controllers;
 
@@ -35,18 +36,8 @@ public class BookingsController(IBookingService bookingService, ILogger<Bookings
             BookingCreated created =>
                 CreatedAtAction(
                     nameof(GetBooking),
-                    new { id = created.Id },
-                    new
-                    {
-                        Id = created.Id,
-                        UserId = created.UserId,
-                        SeatId = created.Seat!.Id,
-                        CreatedAt = created.CreatedAt,
-                        EventId = created.Seat.EventId,
-                        SeatRow = created.Seat.Row,
-                        SeatNumber = created.Seat.Number,
-                        Price = created.Seat.Price
-                    }),
+                    new { id = created.Booking!.Id },
+                    created.MapToBookingDto(userId)),
 
             BookingSeatNotFound =>
                 NotFound(
@@ -78,8 +69,7 @@ public class BookingsController(IBookingService bookingService, ILogger<Bookings
                     Instance = HttpContext.Request.Path
                 }),
 
-            _ => throw new InvalidOperationException(
-                "Unknown booking result.")
+            _ => throw new InvalidOperationException("Unknown booking result.")
         };
     }
 
@@ -96,25 +86,25 @@ public class BookingsController(IBookingService bookingService, ILogger<Bookings
             {
                 Status = StatusCodes.Status401Unauthorized,
                 Title = "Unauthorized.",
-                Detail = "You must be logged in to view your bookings.",
+                Detail = "You must be logged in to view a booking.",
                 Instance = HttpContext.Request.Path
             });
         }
 
         var booking = await bookingService.GetBookingAsync(id, userId, cancellationToken);
-        if (booking == null)
+        return booking switch
         {
-            logger.LogWarning("Booking not found. BookingId: {BookingId}", id);
-            return NotFound(new ProblemDetails
+            BookingNotFound => NotFound(
+            new ProblemDetails
             {
                 Status = StatusCodes.Status404NotFound,
                 Title = "Booking not found.",
                 Detail = $"The specified booking with id {id} could not be found.",
                 Instance = HttpContext.Request.Path
-            });
-        }
-
-        return Ok(booking);
+            }),
+            BookingResult bookingResult => Ok(bookingResult.MapToBookingDto(userId)),
+            _ => throw new InvalidOperationException("Unknown booking result.")
+        };
     }
 
     [HttpGet("my")]
@@ -125,10 +115,16 @@ public class BookingsController(IBookingService bookingService, ILogger<Bookings
         if (userId == null)
         {
             logger.LogWarning("Booking request without authenticated user.");
-            return Unauthorized();
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized.",
+                Detail = "You must be logged in to view your bookings.",
+                Instance = HttpContext.Request.Path
+            });
         }
 
         var bookings = await bookingService.GetBookingsAsync(userId);
-        return Ok(bookings);
+        return Ok(bookings.Select(b => b.MapToBookingDto(userId)));
     }
 }

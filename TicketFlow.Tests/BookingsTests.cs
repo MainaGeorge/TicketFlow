@@ -74,7 +74,7 @@ public class BookingsTests
 
         var bookings = await response.Content.ReadFromJsonAsync<List<BookingResponse>>();
         Assert.NotNull(bookings);
-        Assert.Contains(bookings, booking => booking.Seat.Id == seatId);
+        Assert.Contains(bookings, booking => booking.SeatId == seatId);
     }
 
 
@@ -201,12 +201,6 @@ public class BookingsTests
     {
         public int Id { get; set; }
 
-        public SeatInfo Seat { get; set; } = new();
-    }
-
-
-    private sealed class SeatInfo
-    {
-        public int Id { get; set; }
+        public int SeatId { get; set; } = new();
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace TicketFlow.Domain.Entities;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TicketFlow.Domain.Entities;
 
 public class Event
 {
@@ -7,4 +9,10 @@ public class Event
     public string Venue { get; set; } = string.Empty;
     public DateTime EventDate { get; set; }
     public ICollection<Seat> Seats { get; set; } = [];
+
+    [NotMapped]
+    public int TotalSeats { get; set; }
+
+    [NotMapped]
+    public int AvailableSeats { get; set; }
 }

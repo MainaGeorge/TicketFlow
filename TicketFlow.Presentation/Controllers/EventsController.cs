@@ -1,10 +1,11 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using TicketFlow.Infrastructure.Persistence;
+using TicketFlow.Application.Events;
+using TicketFlow.Application.Seats;
 using TicketFlow.Presentation.DTOs;
+using TicketFlow.Presentation.Mappings;
 
 namespace TicketFlow.Presentation.Controllers;
 
@@ -12,10 +13,10 @@ namespace TicketFlow.Presentation.Controllers;
 [ApiController]
 [ApiVersion("1.0")]
 [Authorize]
-public class EventsController(AppDbContext context, ILogger<EventsController> logger) : ControllerBase
+public class EventsController(IEventService eventService, ISeatsService seatsService, ILogger<EventsController> logger) : ControllerBase
 {
     [HttpPost]
-    public async Task<IActionResult> CreateEvent([FromBody] CreateEventRequest request)
+    public async Task<IActionResult> CreateEvent([FromBody] CreateEventRequest request, CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -32,127 +33,64 @@ public class EventsController(AppDbContext context, ILogger<EventsController> lo
             });
         }
 
-        if (!request.EventDate.HasValue || request.EventDate <= DateTime.UtcNow)
+        var newEvent = new Domain.Entities.Event
         {
-            return BadRequest(new ProblemDetails
+            Name = request.Name!,
+            EventDate = request.EventDate ?? DateTime.UtcNow,
+            Venue = request.Venue!
+        };
+
+        var @event = await eventService.CreateEventAsync(newEvent, userId, cancellationToken);
+
+        return @event switch
+        {
+            PastEventResult pastEventResult => BadRequest(
+            new ProblemDetails
             {
                 Status = StatusCodes.Status400BadRequest,
                 Title = "Invalid event date.",
                 Detail = "Event date must be in the future.",
                 Instance = HttpContext.Request.Path
-            });
-        }
-
-        var newEvent = new Domain.Entities.Event
-        {
-            Name = request.Name!,
-            EventDate = request.EventDate.Value,
-            Venue = request.Venue!
+            }),
+            EventCreatedResult eventCreated => CreatedAtAction(
+                nameof(GetEventById), new { id = eventCreated.Event!.Id },
+                eventCreated.MapToEventDto()),
+            _ => throw new InvalidOperationException("Unknown booking result.")
         };
-        context.Events.Add(newEvent);
-        await context.SaveChangesAsync();
-
-        logger.LogInformation("Event created: {EventId}, Name: {EventName}, Venue: {EventVenue}, Date: {EventDate}", newEvent.Id, newEvent.Name, newEvent.Venue, newEvent.EventDate);
-
-        return CreatedAtAction(nameof(GetEventById), new { id = newEvent.Id }, new EventDto { Id = newEvent.Id, Name = newEvent.Name, Venue = newEvent.Venue, EventDate = newEvent.EventDate });
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetEventById(int id)
+    [AllowAnonymous]
+    public async Task<IActionResult> GetEventById(int id, CancellationToken cancellationToken)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var @event = await eventService.GetEventAsync(id, cancellationToken);
 
-        if (userId == null)
+        return @event switch
         {
-            logger.LogWarning("Event view request without an authenticated user. EventId: {EventId}", id);
-
-            return Unauthorized(new ProblemDetails
-            {
-                Status = StatusCodes.Status401Unauthorized,
-                Title = "Unauthorized.",
-                Detail = "You must be logged in to view events.",
-                Instance = HttpContext.Request.Path
-            });
-        }
-
-        var @event = await context.Events
-            .Where(e => e.Id == id)
-            .Select(e => new EventDto
-            {
-                Id = e.Id,
-                Name = e.Name,
-                Venue = e.Venue,
-                EventDate = e.EventDate,
-                TotalSeats = e.Seats.Count,
-                AvailableSeats = e.Seats.Count(s => s.Booking == null)
-            })
-            .FirstOrDefaultAsync();
-
-        if (@event == null)
-        {
-            logger.LogWarning("Event not found. EventId: {EventId}", id);
-            return NotFound(new ProblemDetails
+            EventNotFoundResult => NotFound(
+            new ProblemDetails
             {
                 Status = StatusCodes.Status404NotFound,
                 Title = "Event not found.",
                 Detail = "The specified event could not be found.",
                 Instance = HttpContext.Request.Path
-            });
-        }
-
-        return Ok(@event);
+            }),
+            EventResult eventResult => Ok(eventResult.MapToEventDto()),
+            _ => throw new InvalidOperationException("Unknown booking result.")
+        };
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAllEvents()
+    [AllowAnonymous]
+    public async Task<IActionResult> GetAllEvents(CancellationToken cancellationToken)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (userId == null)
-        {
-            logger.LogWarning("Event view request without an authenticated user.");
-
-            return Unauthorized(new ProblemDetails
-            {
-                Status = StatusCodes.Status401Unauthorized,
-                Title = "Unauthorized.",
-                Detail = "You must be logged in to view events.",
-                Instance = HttpContext.Request.Path
-            });
-        }
-        var events = await context
-            .Events
-            .Include(e => e.Seats)
-            .Select(e => new EventDto
-            {
-                Id = e.Id,
-                Name = e.Name,
-                Venue = e.Venue,
-                EventDate = e.EventDate,
-                TotalSeats = e.Seats.Count,
-                AvailableSeats = e.Seats.Count(s => s.Booking == null)
-            })
-            .ToListAsync();
-
-        return Ok(events);
+        var events = await eventService.GetAllEventsAsync(cancellationToken);
+        return Ok(events.Select(e => e.MapToEventDto()));
     }
 
     [HttpPost("{eventId:int}/seats")]
     public async Task<IActionResult> CreateSeat(int eventId, [FromBody] CreateSeatRequest request)
     {
-        var @event = await context.Events.FindAsync(eventId);
-        if (@event == null)
-        {
-            logger.LogWarning("Event not found. EventId: {EventId}", eventId);
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "Event not found.",
-                Detail = $"Event {eventId} not found.",
-                Instance = HttpContext.Request.Path
-            });
-        }
-
         var newSeat = new Domain.Entities.Seat
         {
             Row = request.Row,
@@ -160,67 +98,48 @@ public class EventsController(AppDbContext context, ILogger<EventsController> lo
             Price = request.Price!.Value,
             EventId = eventId
         };
-        context.Seats.Add(newSeat);
-        await context.SaveChangesAsync();
 
-        logger.LogInformation("Seat created Id: {SeatId}, Row: {SeatRow}, Number: {SeatNumber}, Price: {SeatPrice}, EventId: {EventId}", newSeat.Id, newSeat.Row, newSeat.Number, newSeat.Price, newSeat.EventId);
+        var createdSeat = await seatsService.CreateSeatAsync(eventId, newSeat);
 
-        var seatDto = new SeatDto { Id = newSeat.Id, Row = newSeat.Row, Number = newSeat.Number, Price = newSeat.Price, EventId = newSeat.EventId };
-
-        return CreatedAtAction(nameof(GetSeat), new { eventId = @event.Id, seatId = newSeat.Id }, seatDto);
+        return createdSeat switch
+        {
+            SeatCreatedResult result => CreatedAtAction(nameof(GetSeat), new { eventId = eventId, seatId = result.Seat!.Id }, result.MapToSeatDto()),
+            EventNotFoundForSeatResult => NotFound(new ProblemDetails
+            {
+                Status = StatusCodes.Status404NotFound,
+                Title = "Event not found.",
+                Detail = $"Event {eventId} not found.",
+                Instance = HttpContext.Request.Path
+            }),
+            _ => throw new InvalidOperationException("Unknown seat result.")
+        };
     }
 
     [HttpGet("{eventId:int}/seats/{seatId:int}")]
     public async Task<IActionResult> GetSeat(int eventId, int seatId)
     {
-        var seat = await context
-            .Seats
-            .Where(s => s.Id == seatId && s.EventId == eventId)
-            .Select(s => new SeatDto
-            {
-                Id = s.Id,
-                Row = s.Row,
-                Number = s.Number,
-                Price = s.Price,
-                EventId = s.EventId,
-                IsBooked = s.Booking != null,
-                BookingId = s.Booking != null ? s.Booking.Id : null
-            })
-            .FirstOrDefaultAsync();
+        var seat = await seatsService.GetSeatAsync(eventId, seatId);
 
-        if (seat == null)
+        return seat switch
         {
-            logger.LogWarning("Seat not found. EventId: {EventId}, SeatId: {SeatId}", eventId, seatId);
-            return NotFound(new ProblemDetails
+            SeatNotFound => NotFound(
+            new ProblemDetails
             {
                 Status = StatusCodes.Status404NotFound,
                 Title = "Seat not found.",
                 Detail = "The specified seat could not be found.",
                 Instance = HttpContext.Request.Path
-            });
-        }
-
-        return Ok(seat);
+            }),
+            SeatResult result => Ok(result.MapToSeatDto()),
+            _ => throw new InvalidOperationException("Unknown seat result.")
+        };
     }
 
     [HttpGet("{eventId:int}/seats")]
     public async Task<IActionResult> GetSeats(int eventId)
     {
-        var seat = await context
-            .Seats
-            .Where(s => s.EventId == eventId)
-            .Select(s => new SeatDto
-            {
-                Id = s.Id,
-                Row = s.Row,
-                Number = s.Number,
-                Price = s.Price,
-                EventId = s.EventId,
-                IsBooked = s.Booking != null,
-                BookingId = s.Booking != null ? s.Booking.Id : null
-            })
-            .ToListAsync();
+        var seats = await seatsService.GetSeatsAsync(eventId);
 
-        return Ok(seat);
+        return Ok(seats.Select(s => s.MapToSeatDto()));
     }
 }

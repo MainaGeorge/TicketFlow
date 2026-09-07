@@ -1,4 +1,6 @@
-﻿namespace TicketFlow.Domain.Entities;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TicketFlow.Domain.Entities;
 
 public class Seat
 {

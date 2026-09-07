@@ -4,7 +4,7 @@ using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Application.Bookings;
 
-public class BookingService(IBookingRepository bookingRepository, ILogger<BookingService> logger) : IBookingService
+public class BookingsService(IBookingRepository bookingRepository, ILogger<BookingsService> logger) : IBookingService
 {
     public async Task<BookingBaseResult> CreateBookingAsync(string userId, int seatId, CancellationToken cancellationToken)
     {
@@ -40,21 +40,29 @@ public class BookingService(IBookingRepository bookingRepository, ILogger<Bookin
         try
         {
             await bookingRepository.SaveChangesAsync(seatId, cancellationToken);
-            return new BookingCreated(userId, booking.Id, booking.CreatedAt, seat);
+            return new BookingCreated(booking);
         }
         catch (SeatAlreadyBookedException)
         {
+            logger.LogError("Seat booked by another user. SeatId: {SeatId}", seatId);
             return new BookingSeatAlreadyBooked();
         }
     }
 
-    public Task<BookingResult?> GetBookingAsync(int bookingId, string userId, CancellationToken cancellationToken = default)
+    public async Task<BookingBaseResult?> GetBookingAsync(int bookingId, string userId, CancellationToken cancellationToken = default)
     {
-        return bookingRepository.GetBookingAsync(bookingId, userId, cancellationToken);
+        var booking = await bookingRepository.GetBookingAsync(bookingId, userId, cancellationToken);
+
+        if(booking is null)
+            return new BookingNotFound();
+
+        return new BookingResult(booking);
     }
 
-    public Task<IEnumerable<BookingResult?>> GetBookingsAsync(string userId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<BookingResult>> GetBookingsAsync(string userId, CancellationToken cancellationToken = default)
     {
-        return bookingRepository.GetUserBookingsAsync(userId, cancellationToken);
+        var bookings =  await bookingRepository.GetUserBookingsAsync(userId, cancellationToken);
+
+        return bookings.Select(b => new BookingResult(b));
     }
 }
