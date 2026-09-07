@@ -18,6 +18,7 @@ public class SeatsRepository(AppDbContext context) : ISeatsRepository
     {
         return await context
             .Seats
+            .Include(b => b.Booking)
             .FirstOrDefaultAsync(s => s.Id == seatId && s.EventId == eventId);
     }
 
@@ -25,6 +26,7 @@ public class SeatsRepository(AppDbContext context) : ISeatsRepository
     {
         return await context
             .Seats
+            .Include(b => b.Booking)
             .Where(s => s.EventId == eventId)
             .ToListAsync();
     }
