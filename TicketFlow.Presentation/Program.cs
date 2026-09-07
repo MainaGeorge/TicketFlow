@@ -22,7 +22,8 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // Add services to the container.
-builder.Services
+builder
+    .Services
     .AddControllers()
     .ConfigureApiBehaviorOptions(options =>
     {
@@ -40,12 +41,22 @@ builder.Services
         };
     });
 
-builder.Services.AddProblemDetails();
-builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-builder.Services.AddApplication(builder.Configuration);
-builder.Services.AddInfrastructure(builder.Configuration);
+builder
+    .Services
+    .AddProblemDetails()
+    .AddExceptionHandler<GlobalExceptionHandler>();
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder
+    .Services
+    .AddApplication(builder.Configuration);
+
+builder
+    .Services
+    .AddInfrastructure(builder.Configuration);
+
+builder
+    .Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         var key = builder.Configuration.GetSection("JwtSettings:Key");
@@ -65,7 +76,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 
-builder.Services
+builder
+    .Services
     .AddApiVersioning(options =>
     {
         options.DefaultApiVersion = new ApiVersion(1, 0);

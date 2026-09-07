@@ -10,9 +10,6 @@ public class Event
     public DateTime EventDate { get; set; }
     public ICollection<Seat> Seats { get; set; } = [];
 
-    [NotMapped]
     public int TotalSeats { get; set; }
-
-    [NotMapped]
     public int AvailableSeats { get; set; }
 }

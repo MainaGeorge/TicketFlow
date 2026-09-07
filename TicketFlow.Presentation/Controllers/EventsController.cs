@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TicketFlow.Application.Events;
 using TicketFlow.Application.Seats;
-using TicketFlow.Presentation.DTOs;
+using TicketFlow.Contracts.DTOs;
 using TicketFlow.Presentation.Mappings;
 
 namespace TicketFlow.Presentation.Controllers;

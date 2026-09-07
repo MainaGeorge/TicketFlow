@@ -1,7 +1,7 @@
 ﻿using TicketFlow.Application.Bookings;
 using TicketFlow.Application.Events;
 using TicketFlow.Application.Seats;
-using TicketFlow.Presentation.DTOs;
+using TicketFlow.Contracts.DTOs;
 
 namespace TicketFlow.Presentation.Mappings;
 

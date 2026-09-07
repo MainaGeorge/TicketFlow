@@ -34,5 +34,10 @@ internal class EventConfiguration : IEntityTypeConfiguration<Event>
             .WithOne(s => s.Event)
             .HasForeignKey(s => s.EventId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // we dont need to persist these, we need them to populate the data which is owned by the seats booking
+        builder
+            .Ignore(c => c.AvailableSeats)
+            .Ignore(c => c.TotalSeats);
     }
 }

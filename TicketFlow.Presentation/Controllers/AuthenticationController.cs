@@ -7,9 +7,9 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using TicketFlow.Contracts.DTOs;
 using TicketFlow.Domain.Entities;
 using TicketFlow.Infrastructure.Persistence;
-using TicketFlow.Presentation.DTOs;
 
 namespace TicketFlow.Presentation.Controllers;
 

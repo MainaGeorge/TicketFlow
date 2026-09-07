@@ -1,4 +1,4 @@
-﻿namespace TicketFlow.Presentation.DTOs;
+﻿namespace TicketFlow.Contracts.DTOs;
 
 public class BookingDto
 {
