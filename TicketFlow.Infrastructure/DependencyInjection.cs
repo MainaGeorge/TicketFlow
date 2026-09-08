@@ -31,7 +31,7 @@ public static class DependencyInjection
             .AddRoleManager<RoleManager<IdentityRole>>();
 
         services.AddScoped<IBookingRepository, BookingRepository>();
-        services.AddScoped<IEventRepository, EventRepository>();
+        services.AddScoped<IEventsRepository, EventRepository>();
         services.AddScoped<ISeatsRepository, SeatsRepository>();
 
         return services;

@@ -14,7 +14,7 @@ namespace TicketFlow.Tests.Controllers;
 public class EventsControllerTests
 {
     private readonly Mock<ISeatsService> _mockSeatsService;
-    private readonly Mock<IEventService> _mockEventsService;
+    private readonly Mock<IEventsService> _mockEventsService;
     private readonly Mock<ILogger<EventsController>> _logger;
     private readonly EventsController _controller;
     private const string userId = "abc-123";
@@ -31,7 +31,7 @@ public class EventsControllerTests
 
     public EventsControllerTests()
     {
-        _mockEventsService = new Mock<IEventService>();
+        _mockEventsService = new Mock<IEventsService>();
         _mockSeatsService = new Mock<ISeatsService>();
         _logger = new Mock<ILogger<EventsController>>();
 

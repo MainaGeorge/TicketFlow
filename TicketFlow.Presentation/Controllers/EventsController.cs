@@ -13,7 +13,7 @@ namespace TicketFlow.Presentation.Controllers;
 [ApiController]
 [ApiVersion("1.0")]
 [Authorize]
-public class EventsController(IEventService eventService, ISeatsService seatsService, ILogger<EventsController> logger) : ControllerBase
+public class EventsController(IEventsService eventService, ISeatsService seatsService, ILogger<EventsController> logger) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> CreateEvent([FromBody] CreateEventRequest request, CancellationToken cancellationToken)

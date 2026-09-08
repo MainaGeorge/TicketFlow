@@ -4,7 +4,7 @@ using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Application.Seats;
 
-public class SeatsService(ILogger<SeatsService> logger, ISeatsRepository seatsRepository, IEventRepository eventRepository) : ISeatsService
+public class SeatsService(ILogger<SeatsService> logger, ISeatsRepository seatsRepository, IEventsRepository eventRepository) : ISeatsService
 {
     public async Task<SeatBaseResult> CreateSeatAsync(int eventId, Seat seat, CancellationToken cancellationToken = default)
     {

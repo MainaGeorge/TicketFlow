@@ -5,14 +5,14 @@ using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Tests.Application;
 
-public class BookingServiceTests
+public class BookingsServiceTests
 {
     private readonly Mock<ILogger<BookingsService>> _logger;
     private readonly Mock<IBookingRepository> _repository;
-    private readonly IBookingService _bookingService;
+    private readonly BookingsService _bookingService;
     private const string UserId = "userId";
 
-    public BookingServiceTests()
+    public BookingsServiceTests()
     {
         _logger = new Mock<ILogger<BookingsService>>();
         _repository = new Mock<IBookingRepository>();
@@ -33,6 +33,8 @@ public class BookingServiceTests
 
         var result = Assert.IsType<BookingResult>(booking);
 
+        _repository.Verify(x => x.GetBookingAsync(bookingId, UserId,It.IsAny<CancellationToken>()),Times.Once);
+
         Assert.Equal(bookingId, result.Booking!.Id);
     }
 
@@ -46,8 +48,57 @@ public class BookingServiceTests
             .ReturnsAsync((Booking?) null);
 
         var booking = await _bookingService.GetBookingAsync(bookingId, UserId, CancellationToken.None);
+        _repository.Verify(x => x.GetBookingAsync(bookingId, UserId, It.IsAny<CancellationToken>()), Times.Once);
 
         var result = Assert.IsType<BookingNotFound>(booking);
+    }
+
+    [Fact]
+    public async Task GetBookingAsync_PassesCancellationTokenToRepository()
+    {
+        var bookingId = 1;
+        using var cts = new CancellationTokenSource();
+        var cancellationToken = cts.Token;
+
+        _repository
+            .Setup(x => x.GetBookingAsync(bookingId, UserId,cancellationToken))
+            .ReturnsAsync(new Booking
+            {
+                Id = bookingId,
+                UserId = UserId
+            });
+
+        await _bookingService.GetBookingAsync(bookingId, UserId, cancellationToken);
+
+        _repository.Verify(x => x.GetBookingAsync(bookingId, UserId, cancellationToken), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetBookingAsync_WhenCancellationRequested_PassesCancelledToken()
+    {
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        _repository
+            .Setup(x => x.GetBookingAsync(It.IsAny<int>(), It.IsAny<string>(), cts.Token))
+            .ThrowsAsync(new OperationCanceledException(cts.Token));
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => _bookingService.GetBookingAsync(1, UserId, cts.Token));
+    }
+
+    [Fact]
+    public async Task GetBookingAsync_WhenRepositoryThrows_PropagatesException()
+    {
+        var exception = new InvalidOperationException("Unexpected failure");
+
+        _repository
+            .Setup(x => x.GetBookingAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(exception);
+
+        var result = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _bookingService.GetBookingAsync(1, UserId, CancellationToken.None));
+
+        Assert.Equal("Unexpected failure", result.Message);
     }
 
     [Fact]
@@ -104,11 +155,73 @@ public class BookingServiceTests
         var result = await _bookingService.CreateBookingAsync(UserId, seatId, CancellationToken.None);
 
         _repository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == UserId && b.SeatId == seatId), It.IsAny<CancellationToken>()), Times.Once);
+        _repository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
 
         Assert.NotNull(createdBooking);
         Assert.Equal(UserId, createdBooking.UserId);
         Assert.Equal(seatId, createdBooking.SeatId);
 
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_PassesCancellationTokenToRepository()
+    {
+        var seatId = 1;
+        using var cts = new CancellationTokenSource();
+        var cancellationToken = cts.Token;
+
+        var seat = new Seat
+        {
+            Id = seatId,
+            Event = new Event { EventDate = DateTime.UtcNow.AddDays(10) }
+        };
+
+        _repository
+            .Setup(x => x.GetSeatForBookingAsync(seatId, cancellationToken))
+            .ReturnsAsync(seat);
+
+        _repository
+            .Setup(x => x.AddAsync(It.IsAny<Booking>(), cancellationToken))
+            .Returns(Task.CompletedTask);
+
+        _repository
+            .Setup(x => x.SaveChangesAsync(It.IsAny<int>(), cancellationToken))
+            .Returns(Task.CompletedTask);
+
+        await _bookingService.CreateBookingAsync(UserId, seatId, cancellationToken);
+
+        _repository.Verify(x => x.GetSeatForBookingAsync(seatId, cancellationToken), Times.Once);
+
+        _repository.Verify(x => x.AddAsync(It.IsAny<Booking>(), cancellationToken), Times.Once);
+
+        _repository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), cancellationToken), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_WhenRepositoryThrows_PropagatesException()
+    {
+        var seatId = 1;
+
+        var seat = new Seat
+        {
+            Id = seatId,
+            Event = new Event { EventDate = DateTime.UtcNow.AddDays(10) }
+        };
+
+        _repository
+            .Setup(x => x.GetSeatForBookingAsync(seatId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(seat);
+
+        var exception = new InvalidOperationException("Database unavailable");
+
+        _repository
+            .Setup(x => x.AddAsync(It.IsAny<Booking>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(exception);
+
+        var result = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _bookingService.CreateBookingAsync(UserId, seatId,CancellationToken.None));
+
+        Assert.Equal("Database unavailable", result.Message);
     }
 
     [Fact]

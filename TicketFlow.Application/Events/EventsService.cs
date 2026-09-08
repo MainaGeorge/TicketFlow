@@ -3,7 +3,7 @@ using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Application.Events;
 
-public class EventsService(IEventRepository eventRepository, ILogger<EventsService> logger) : IEventService
+public class EventsService(IEventsRepository eventRepository, ILogger<EventsService> logger) : IEventsService
 {
     public async Task<EventBaseResult> CreateEventAsync(Event @event, string userId, CancellationToken cancellationToken = default)
     {

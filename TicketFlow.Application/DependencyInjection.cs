@@ -11,7 +11,7 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<IBookingService, BookingsService>();
-        services.AddScoped<IEventService, EventsService>();
+        services.AddScoped<IEventsService, EventsService>();
         services.AddScoped<ISeatsService, SeatsService>();
         return services;
     }

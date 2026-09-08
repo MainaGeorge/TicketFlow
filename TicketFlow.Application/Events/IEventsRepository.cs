@@ -2,7 +2,7 @@
 
 namespace TicketFlow.Application.Events;
 
-public interface IEventRepository
+public interface IEventsRepository
 {
     Task<Event?> GetEventAsync(int eventId, CancellationToken cancellationToken = default);
     Task<Event> CreateEventAsync(Event @event, CancellationToken cancellationToken = default);

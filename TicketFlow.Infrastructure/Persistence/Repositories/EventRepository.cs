@@ -4,7 +4,7 @@ using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Infrastructure.Persistence.Repositories;
 
-public class EventRepository(AppDbContext context) : IEventRepository
+public class EventRepository(AppDbContext context) : IEventsRepository
 {
     public async Task<Event> CreateEventAsync(Event @event, CancellationToken cancellationToken = default)
     {
