@@ -5,7 +5,7 @@ using System.Net.Http.Json;
 using TicketFlow.Domain.Entities;
 using TicketFlow.Infrastructure.Persistence;
 
-namespace TicketFlow.Tests;
+namespace TicketFlow.Tests.Integration;
 
 public class AuthTests
 {

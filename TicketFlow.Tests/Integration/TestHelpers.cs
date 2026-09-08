@@ -1,7 +1,7 @@
 ﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
-namespace TicketFlow.Tests;
+namespace TicketFlow.Tests.Integration;
 
 public static class TestHelpers
 {

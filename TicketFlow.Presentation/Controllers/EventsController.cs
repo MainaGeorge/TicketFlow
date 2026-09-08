@@ -89,8 +89,23 @@ public class EventsController(IEventService eventService, ISeatsService seatsSer
     }
 
     [HttpPost("{eventId:int}/seats")]
-    public async Task<IActionResult> CreateSeat(int eventId, [FromBody] CreateSeatRequest request)
+    public async Task<IActionResult> CreateSeat(int eventId, [FromBody] CreateSeatRequest request, CancellationToken cancellationToken)
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId == null)
+        {
+            logger.LogWarning("Event creation request without authenticated user.");
+
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized.",
+                Detail = "You must be logged in to create events.",
+                Instance = HttpContext.Request.Path
+            });
+        }
+
         var newSeat = new Domain.Entities.Seat
         {
             Row = request.Row,
@@ -99,7 +114,7 @@ public class EventsController(IEventService eventService, ISeatsService seatsSer
             EventId = eventId
         };
 
-        var createdSeat = await seatsService.CreateSeatAsync(eventId, newSeat);
+        var createdSeat = await seatsService.CreateSeatAsync(eventId, newSeat, cancellationToken);
 
         return createdSeat switch
         {
@@ -116,9 +131,9 @@ public class EventsController(IEventService eventService, ISeatsService seatsSer
     }
 
     [HttpGet("{eventId:int}/seats/{seatId:int}")]
-    public async Task<IActionResult> GetSeat(int eventId, int seatId)
+    public async Task<IActionResult> GetSeat(int eventId, int seatId, CancellationToken cancellationToken)
     {
-        var seat = await seatsService.GetSeatAsync(eventId, seatId);
+        var seat = await seatsService.GetSeatAsync(eventId, seatId, cancellationToken);
 
         return seat switch
         {
@@ -136,9 +151,9 @@ public class EventsController(IEventService eventService, ISeatsService seatsSer
     }
 
     [HttpGet("{eventId:int}/seats")]
-    public async Task<IActionResult> GetSeats(int eventId)
+    public async Task<IActionResult> GetSeats(int eventId, CancellationToken cancellationToken)
     {
-        var seats = await seatsService.GetSeatsAsync(eventId);
+        var seats = await seatsService.GetSeatsAsync(eventId, cancellationToken);
 
         return Ok(seats.Select(s => s.MapToSeatDto()));
     }
