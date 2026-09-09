@@ -2,12 +2,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using TicketFlow.Application.Authentication.Interfaces;
 using TicketFlow.Application.Bookings.Interfaces;
 using TicketFlow.Application.Events.Interfaces;
 using TicketFlow.Application.Seats.Interfaces;
 using TicketFlow.Domain.Entities;
 using TicketFlow.Infrastructure.Persistence;
 using TicketFlow.Infrastructure.Persistence.Repositories;
+using TicketFlow.Infrastructure.Services;
 
 namespace TicketFlow.Infrastructure;
 
@@ -33,6 +35,8 @@ public static class DependencyInjection
         services.AddScoped<IBookingRepository, BookingRepository>();
         services.AddScoped<IEventsRepository, EventRepository>();
         services.AddScoped<ISeatsRepository, SeatsRepository>();
+        services.AddScoped<IIdentityService, IdentityService>();
+        services.AddScoped<ITokenService, TokenService>();
 
         return services;
     }
