@@ -1,6 +1,6 @@
 ﻿using TicketFlow.Domain.Entities;
 
-namespace TicketFlow.Application.Events;
+namespace TicketFlow.Application.Events.Models;
 
 public abstract record EventBaseResult(Event? Event);
 public sealed record EventCreatedResult(Event Event)

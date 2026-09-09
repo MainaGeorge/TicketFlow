@@ -1,6 +1,7 @@
-﻿using TicketFlow.Domain.Entities;
+﻿using TicketFlow.Application.Events.Models;
+using TicketFlow.Domain.Entities;
 
-namespace TicketFlow.Application.Events;
+namespace TicketFlow.Application.Events.Interfaces;
 
 public interface IEventsService
 {

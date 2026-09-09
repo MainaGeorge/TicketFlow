@@ -2,7 +2,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using TicketFlow.Application.Bookings;
+using TicketFlow.Application.Bookings.Interfaces;
+using TicketFlow.Application.Bookings.Models;
 using TicketFlow.Contracts.DTOs;
 using TicketFlow.Presentation.Mappings;
 

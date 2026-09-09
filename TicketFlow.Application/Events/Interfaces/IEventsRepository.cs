@@ -1,6 +1,6 @@
 ﻿using TicketFlow.Domain.Entities;
 
-namespace TicketFlow.Application.Events;
+namespace TicketFlow.Application.Events.Interfaces;
 
 public interface IEventsRepository
 {

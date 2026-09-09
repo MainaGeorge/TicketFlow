@@ -1,6 +1,6 @@
 ﻿using TicketFlow.Domain.Entities;
 
-namespace TicketFlow.Application.Bookings;
+namespace TicketFlow.Application.Bookings.Models;
 
 public abstract record BookingBaseResult(Booking? Booking = null);
 public sealed record BookingCreated(Booking Booking) : BookingBaseResult(Booking);

@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using TicketFlow.Application.Events;
+using TicketFlow.Application.Events.Interfaces;
 using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Infrastructure.Persistence.Repositories;

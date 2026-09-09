@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
-using TicketFlow.Application.Events;
+using TicketFlow.Application.Events.Interfaces;
+using TicketFlow.Application.Events.Models;
+using TicketFlow.Application.Events.Services;
 using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Tests.Application;

@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
+using TicketFlow.Application.Events.Interfaces;
+using TicketFlow.Application.Events.Models;
 using TicketFlow.Domain.Entities;
 
-namespace TicketFlow.Application.Events;
+namespace TicketFlow.Application.Events.Services;
 
 public class EventsService(IEventsRepository eventRepository, ILogger<EventsService> logger) : IEventsService
 {

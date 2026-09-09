@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
 using TicketFlow.Application.Bookings.Exceptions;
+using TicketFlow.Application.Bookings.Interfaces;
+using TicketFlow.Application.Bookings.Models;
 using TicketFlow.Domain.Entities;
 
-namespace TicketFlow.Application.Bookings;
+namespace TicketFlow.Application.Bookings.Services;
 
 public class BookingsService(IBookingRepository bookingRepository, ILogger<BookingsService> logger) : IBookingService
 {

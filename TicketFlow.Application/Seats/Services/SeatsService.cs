@@ -1,8 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
-using TicketFlow.Application.Events;
+using TicketFlow.Application.Events.Interfaces;
+using TicketFlow.Application.Seats.Interfaces;
 using TicketFlow.Domain.Entities;
 
-namespace TicketFlow.Application.Seats;
+namespace TicketFlow.Application.Seats.Services;
 
 public class SeatsService(ILogger<SeatsService> logger, ISeatsRepository seatsRepository, IEventsRepository eventRepository) : ISeatsService
 {

@@ -1,5 +1,5 @@
-﻿using TicketFlow.Application.Bookings;
-using TicketFlow.Application.Events;
+﻿using TicketFlow.Application.Bookings.Models;
+using TicketFlow.Application.Events.Models;
 using TicketFlow.Application.Seats;
 using TicketFlow.Contracts.DTOs;
 

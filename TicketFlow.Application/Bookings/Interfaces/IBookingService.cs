@@ -1,4 +1,6 @@
-﻿namespace TicketFlow.Application.Bookings;
+﻿using TicketFlow.Application.Bookings.Models;
+
+namespace TicketFlow.Application.Bookings.Interfaces;
 
 public interface IBookingService
 {

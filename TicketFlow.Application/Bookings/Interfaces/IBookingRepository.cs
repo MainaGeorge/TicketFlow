@@ -1,6 +1,6 @@
 ﻿using TicketFlow.Domain.Entities;
 
-namespace TicketFlow.Application.Bookings;
+namespace TicketFlow.Application.Bookings.Interfaces;
 
 public interface IBookingRepository
 {

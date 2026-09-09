@@ -1,7 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using TicketFlow.Application.Bookings;
 using TicketFlow.Application.Bookings.Exceptions;
+using TicketFlow.Application.Bookings.Interfaces;
 using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Infrastructure.Persistence.Repositories;
