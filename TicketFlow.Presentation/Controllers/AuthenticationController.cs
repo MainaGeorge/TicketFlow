@@ -19,6 +19,14 @@ public class AuthenticationController(IAuthenticationService authService) : Cont
 
         return result switch
         {
+            EmailAlreadyRegistered duplicateEmail => Conflict(new ProblemDetails
+            {
+                Status = StatusCodes.Status409Conflict,
+                Title = "Email already registered.",
+                Detail = $"An account with the email address '{registrationDto.Email}' already exists.",
+                Instance = HttpContext.Request.Path
+            }),
+
             RegistrationFailed failedRegistration => BadRequest(new ValidationProblemDetails(
                 failedRegistration
                 .Errors
