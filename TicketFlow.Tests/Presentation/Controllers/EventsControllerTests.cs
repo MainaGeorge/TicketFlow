@@ -11,7 +11,7 @@ using TicketFlow.Contracts.DTOs;
 using TicketFlow.Domain.Entities;
 using TicketFlow.Presentation.Controllers;
 
-namespace TicketFlow.Tests.Controllers;
+namespace TicketFlow.Tests.Presentation.Controllers;
 
 public class EventsControllerTests
 {
