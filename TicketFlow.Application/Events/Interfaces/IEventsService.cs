@@ -1,0 +1,11 @@
+﻿using TicketFlow.Application.Events.Models;
+using TicketFlow.Domain.Entities;
+
+namespace TicketFlow.Application.Events.Interfaces;
+
+public interface IEventsService
+{
+    Task<EventBaseResult?> GetEventAsync(int eventId, CancellationToken cancellationToken = default);
+    Task<EventBaseResult> CreateEventAsync(Event @event, string userId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<EventResult>> GetAllEventsAsync(CancellationToken cancellationToken = default);
+}
