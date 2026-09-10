@@ -5,7 +5,7 @@ using TicketFlow.Application.Events.Models;
 using TicketFlow.Application.Events.Services;
 using TicketFlow.Domain.Entities;
 
-namespace TicketFlow.Tests.Application;
+namespace TicketFlow.Tests.Application.Services;
 
 public class EventsServiceTests
 {

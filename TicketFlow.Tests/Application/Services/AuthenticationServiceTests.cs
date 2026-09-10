@@ -6,7 +6,7 @@ using TicketFlow.Application.Authentication.Services;
 using TicketFlow.Contracts.DTOs;
 using TicketFlow.Domain.Entities;
 
-namespace TicketFlow.Tests.Application;
+namespace TicketFlow.Tests.Application.Services;
 
 public  class AuthenticationServiceTests
 {

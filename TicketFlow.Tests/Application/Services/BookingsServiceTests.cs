@@ -5,7 +5,7 @@ using TicketFlow.Application.Bookings.Models;
 using TicketFlow.Application.Bookings.Services;
 using TicketFlow.Domain.Entities;
 
-namespace TicketFlow.Tests.Application;
+namespace TicketFlow.Tests.Application.Services;
 
 public class BookingsServiceTests
 {

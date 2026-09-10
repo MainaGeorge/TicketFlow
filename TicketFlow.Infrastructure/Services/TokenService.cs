@@ -1,27 +1,23 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using TicketFlow.Application.Authentication.Interfaces;
+using TicketFlow.Application.Common.Configurations;
 using TicketFlow.Contracts.DTOs;
 using TicketFlow.Domain.Entities;
 using TicketFlow.Infrastructure.Persistence;
 
 namespace TicketFlow.Infrastructure.Services;
 
-public class TokenService(AppDbContext appDbContext, IConfiguration configuration, ILogger<TokenService> logger) : ITokenService
+public class TokenService(AppDbContext appDbContext, ILogger<TokenService> logger, IOptions<JwtSettings> jwtOptions) : ITokenService
 {
+    private readonly JwtSettings _jwtSettings = jwtOptions.Value;
     private string GenerateAccessTokens(User user, DateTimeOffset expiresAt)
     {
-        var jwtSettings = configuration.GetSection("JwtSettings");
-
-        var key = jwtSettings["Key"]!;
-        var issuer = jwtSettings["Issuer"]!;
-        var audience = jwtSettings["Audience"]!;
-
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id),
@@ -30,12 +26,12 @@ public class TokenService(AppDbContext appDbContext, IConfiguration configuratio
             new(ClaimTypes.Name, user.UserName ?? string.Empty)
         };
 
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
+        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-            issuer: issuer,
-            audience: audience,
+            issuer: _jwtSettings.Issuer,
+            audience: _jwtSettings.Audience,
             claims: claims,
             expires: expiresAt.UtcDateTime,
             signingCredentials: credentials);
@@ -51,7 +47,7 @@ public class TokenService(AppDbContext appDbContext, IConfiguration configuratio
 
     public async Task<TokenResponse> GenerateTokensAsync(User user, CancellationToken cancellationToken = default)
     {
-        var expiresAt = DateTimeOffset.UtcNow.AddMinutes(15);
+        var expiresAt = DateTimeOffset.UtcNow.AddMinutes(_jwtSettings.AccessTokenLifetimeMinutes);
         var accessToken = GenerateAccessTokens(user, expiresAt);
         var refreshToken = GenerateRefreshToken();
 
@@ -59,7 +55,7 @@ public class TokenService(AppDbContext appDbContext, IConfiguration configuratio
         {
             Token = refreshToken,
             UserId = user.Id,
-            ExpiresAt = DateTimeOffset.UtcNow.AddDays(7),
+            ExpiresAt = expiresAt,
             CreatedAt = DateTimeOffset.UtcNow
         };
 

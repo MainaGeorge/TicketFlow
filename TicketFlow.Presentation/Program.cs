@@ -11,6 +11,8 @@ using TicketFlow.Presentation.Exceptions;
 using TicketFlow.Presentation.Swagger;
 using TicketFlow.Infrastructure;
 using TicketFlow.Application;
+using TicketFlow.Infrastructure.Persistence;
+using TicketFlow.Application.Common.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -118,6 +120,8 @@ builder.Services.AddSwaggerGen(options =>
         });
 });
 
+builder.Services.AddJwtSettings(builder.Configuration);
+
 var app = builder.Build();
 
 app.UseSerilogRequestLogging(options =>
@@ -133,6 +137,7 @@ app.UseSerilogRequestLogging(options =>
 
 if (app.Environment.IsDevelopment())
 {
+    await app.ApplyMigrationsAsync();
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
