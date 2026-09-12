@@ -4,14 +4,17 @@ using Microsoft.AspNetCore.Mvc;
 using TicketFlow.Application.Authentication.Interfaces;
 using TicketFlow.Application.Authentication.Models;
 using TicketFlow.Contracts.DTOs;
+using TicketFlow.Presentation.Mappings;
 
 namespace TicketFlow.Presentation.Controllers;
 
 [Route("api/auth")]
 [ApiController]
 [ApiVersion("1.0")]
+[Authorize]
 public class AuthenticationController(IAuthenticationService authService) : ControllerBase
 {
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest registrationDto, CancellationToken cancellationToken)
     {
@@ -26,7 +29,6 @@ public class AuthenticationController(IAuthenticationService authService) : Cont
                 Detail = $"An account with the email address '{registrationDto.Email}' already exists.",
                 Instance = HttpContext.Request.Path
             }),
-
             RegistrationFailed failedRegistration => BadRequest(new ValidationProblemDetails(
                 failedRegistration
                 .Errors
@@ -37,20 +39,14 @@ public class AuthenticationController(IAuthenticationService authService) : Cont
                     Title = "User Registration Failed.",
                     Instance = HttpContext.Request.Path
                  }),
-
             RegistrationSucceeded successfulRegistration =>
                 StatusCode(StatusCodes.Status201Created, 
-                new 
-                { 
-                    successfulRegistration.User.Id, 
-                    successfulRegistration.User.Email,
-                    successfulRegistration.User.DisplayName 
-                }),
-
+                successfulRegistration.User.MapToRegisterUserDto()),
             _ => throw new InvalidOperationException("unknown registration result")
         };
     }
 
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request, CancellationToken cancellationToken)
     {
@@ -69,7 +65,6 @@ public class AuthenticationController(IAuthenticationService authService) : Cont
         };
     }
 
-    [Authorize]
     [HttpPost("deactivate")]
     public async Task<IActionResult> DeactivateAccount(DeactivateUserRequest request, CancellationToken cancellationToken)
     {
@@ -97,7 +92,6 @@ public class AuthenticationController(IAuthenticationService authService) : Cont
         };
     }
 
-    [Authorize]
     [HttpPost("reactivate")]
     public async Task<IActionResult> ReactivateAccount(ReactivateUserRequest request, CancellationToken cancellationToken)
     {
@@ -113,6 +107,7 @@ public class AuthenticationController(IAuthenticationService authService) : Cont
                 Detail = "The specified user is already active.",
                 Instance = HttpContext.Request.Path
             }),
+            AccountActivationFailed => StatusCode(StatusCodes.Status500InternalServerError),
             AccountNotFound _ => NotFound(new ProblemDetails
             {
                 Status = StatusCodes.Status404NotFound,
@@ -124,6 +119,7 @@ public class AuthenticationController(IAuthenticationService authService) : Cont
         };
     }
 
+    [AllowAnonymous]
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh(RefreshTokenRequest request, CancellationToken cancellationToken)
     {

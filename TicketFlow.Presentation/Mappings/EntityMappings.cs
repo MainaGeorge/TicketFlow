@@ -2,6 +2,7 @@
 using TicketFlow.Application.Events.Models;
 using TicketFlow.Application.Seats;
 using TicketFlow.Contracts.DTOs;
+using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Presentation.Mappings;
 
@@ -47,5 +48,10 @@ public static class EntityMappings
             Price = result.Seat.Price,
             Row = result.Seat.Row
         };
+    }
+
+    public static RegisterUserResponseDto MapToRegisterUserDto(this User user)
+    {
+        return new RegisterUserResponseDto { Email = user.Email!, Id = user.Id, UserName = user.DisplayName};
     }
 }
