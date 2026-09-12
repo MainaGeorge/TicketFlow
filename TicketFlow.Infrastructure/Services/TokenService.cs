@@ -9,11 +9,10 @@ using TicketFlow.Application.Authentication.Interfaces;
 using TicketFlow.Application.Common.Configurations;
 using TicketFlow.Contracts.DTOs;
 using TicketFlow.Domain.Entities;
-using TicketFlow.Infrastructure.Persistence;
 
 namespace TicketFlow.Infrastructure.Services;
 
-public class TokenService(AppDbContext appDbContext, ILogger<TokenService> logger, IOptions<JwtSettings> jwtOptions) : ITokenService
+public class TokenService(ILogger<TokenService> logger, IOptions<JwtSettings> jwtOptions) : ITokenService
 {
     private readonly JwtSettings _jwtSettings = jwtOptions.Value;
     private string GenerateAccessTokens(User user, DateTimeOffset expiresAt)
@@ -45,32 +44,22 @@ public class TokenService(AppDbContext appDbContext, ILogger<TokenService> logge
         return Convert.ToBase64String(randomBytes);
     }
 
-    public async Task<TokenResponse> GenerateTokensAsync(User user, CancellationToken cancellationToken = default)
+    public Task<TokenResponse> GenerateTokensAsync(User user, CancellationToken cancellationToken = default)
     {
         var expiresAt = DateTimeOffset.UtcNow.AddMinutes(_jwtSettings.AccessTokenLifetimeMinutes);
         var accessToken = GenerateAccessTokens(user, expiresAt);
         var refreshToken = GenerateRefreshToken();
 
-        var refreshTokenEntity = new RefreshToken
-        {
-            Token = refreshToken,
-            UserId = user.Id,
-            ExpiresAt = expiresAt,
-            CreatedAt = DateTimeOffset.UtcNow
-        };
-
-        appDbContext.RefreshTokens.Add(refreshTokenEntity);
-
         logger.LogInformation("Generated access and refresh tokens for user {Email}.", user.Email);
 
-        await appDbContext.SaveChangesAsync(cancellationToken);
-
-        return new TokenResponse
+        var tokens = new TokenResponse
         {
             AccessToken = accessToken,
             RefreshToken = refreshToken,
             ExpiresAt = expiresAt,
             TokenType = "Bearer"
         };
+
+        return Task.FromResult(tokens);
     }
 }

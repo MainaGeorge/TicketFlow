@@ -123,4 +123,23 @@ public class AuthenticationController(IAuthenticationService authService) : Cont
             _ => throw new InvalidOperationException("unknown deactivation result")
         };
     }
+
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh(RefreshTokenRequest request, CancellationToken cancellationToken)
+    {
+        var result = await authService.RefreshTokenAsync(request, cancellationToken);
+
+        return result switch
+        {
+            RefreshTokenSucceeded success => Ok(success),
+            RefreshTokenInvalid => Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Invalid refresh token.",
+                Detail = "The refresh token is invalid or expired.",
+                Instance = HttpContext.Request.Path
+            }),
+            _ => throw new InvalidOperationException("Unknown refresh token result.")
+        };
+    }
 }

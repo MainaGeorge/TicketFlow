@@ -13,6 +13,7 @@ public  class AuthenticationServiceTests
     private readonly Mock<ILogger<AuthenticationService>> _logger;
     private readonly Mock<ITokenService> _tokenService;
     private readonly Mock<IIdentityService> _identityService;
+    private readonly Mock<IRefreshTokenRepository> _refreshTokenRepository;
     private readonly AuthenticationService _authenticationService;
 
     private const string Email = "test@email.com";
@@ -25,7 +26,8 @@ public  class AuthenticationServiceTests
         _logger = new Mock<ILogger<AuthenticationService>>();
         _tokenService = new Mock<ITokenService>();
         _identityService = new Mock<IIdentityService>();
-        _authenticationService = new AuthenticationService(_identityService.Object, _tokenService.Object, _logger.Object);
+        _refreshTokenRepository = new Mock<IRefreshTokenRepository>();
+        _authenticationService = new AuthenticationService(_identityService.Object, _tokenService.Object, _refreshTokenRepository.Object, _logger.Object);
     }
 
     [Fact]
@@ -135,6 +137,8 @@ public  class AuthenticationServiceTests
 
         _identityService.Verify(x => x.CheckPasswordAsync(It.Is<User>(e => e.Email == Email), Password, CancellationToken.None), Times.Never);
         _tokenService.Verify(x => x.GenerateTokensAsync(It.Is<User>(e => e.Email == Email), CancellationToken.None), Times.Never);
+        _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>()), Times.Never);
     }
 
     [Fact]
@@ -152,6 +156,8 @@ public  class AuthenticationServiceTests
 
         _identityService.Verify(x => x.CheckPasswordAsync(inactiveUser, Password, CancellationToken.None), Times.Never);
         _tokenService.Verify(x => x.GenerateTokensAsync(inactiveUser, CancellationToken.None), Times.Never);
+        _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>()), Times.Never);
     }
 
     [Fact]
@@ -173,6 +179,8 @@ public  class AuthenticationServiceTests
 
         _identityService.Verify(x => x.CheckPasswordAsync(activeUser, Password, CancellationToken.None), Times.Once);
         _tokenService.Verify(x => x.GenerateTokensAsync(activeUser, CancellationToken.None), Times.Never);
+        _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>()), Times.Never);
     }
 
     [Fact]
@@ -194,6 +202,13 @@ public  class AuthenticationServiceTests
             .Setup(x => x.GenerateTokensAsync(activeUser, CancellationToken.None))
             .ReturnsAsync(tokenResponse);
 
+        _refreshTokenRepository
+            .Setup(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _refreshTokenRepository.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
         var loginResult = await _authenticationService.LoginAsync(new LoginRequest { Email = Email, Password = Password }, CancellationToken.None);
         var loginSucceed = Assert.IsType<LoginSucceeded>(loginResult);
 
@@ -204,6 +219,12 @@ public  class AuthenticationServiceTests
 
         _identityService.Verify(x => x.CheckPasswordAsync(activeUser, Password, CancellationToken.None), Times.Once);
         _tokenService.Verify(x => x.GenerateTokensAsync(activeUser, CancellationToken.None), Times.Once);
+        _refreshTokenRepository.Verify( 
+            x => x.AddAsync(
+                It.Is<RefreshToken>(r => r.Token == tokenResponse.RefreshToken && r.UserId == activeUser.Id && r.ExpiresAt > DateTimeOffset.UtcNow),
+                It.IsAny<CancellationToken>()), Times.Once);
+
+        _refreshTokenRepository.Verify(x => x.SaveChangesAsync(CancellationToken.None), Times.Once);
     }
 
     [Fact]

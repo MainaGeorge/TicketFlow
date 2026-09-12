@@ -9,4 +9,5 @@ public interface IAuthenticationService
     Task<LoginResult> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default);
     Task<AccountResult> DeactivateAccountAsync(string email, CancellationToken cancellationToken = default);
     Task<AccountResult> ReactivateAccountAsync(string email, CancellationToken cancellationToken = default);
+    Task<RefreshTokenResult> RefreshTokenAsync(RefreshTokenRequest request, CancellationToken cancellationToken = default);
 }
