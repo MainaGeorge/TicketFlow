@@ -438,11 +438,271 @@ public  class AuthenticationServiceTests
 
         Assert.Equal("Unexpected error", result.Message);
 
-        _identityService.Verify(
-            x => x.UpdateUserAsync(
-                It.IsAny<User>(),
-                It.IsAny<CancellationToken>()),
-            Times.Never);
+        _identityService.Verify(x => x.UpdateUserAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_WhenTokenNotFound_ReturnsRefreshTokenInvalid()
+    {
+        var token = "some-existing-token";
+
+        _refreshTokenRepository
+            .Setup(x => x.GetByTokenAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((RefreshToken?)null);
+
+        var refreshTokenRequest = new RefreshTokenRequest { RefreshToken = token };
+
+        var refreshToken = await _authenticationService.RefreshTokenAsync(refreshTokenRequest, CancellationToken.None);
+
+        var refreshTokenResult = Assert.IsType<RefreshTokenInvalid>(refreshToken);
+
+        _refreshTokenRepository.Verify(x => x.GetByTokenAsync(token, CancellationToken.None), Times.Once);
+        _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
+        _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_WhenTokenIsRevoked_ReturnsRefreshTokenInvalid()
+    {
+        var token = "some-existing-token";
+        var refreshToken = new RefreshToken { RevokedAt = DateTime.UtcNow.AddDays(-1) };
+
+        _refreshTokenRepository
+            .Setup(x => x.GetByTokenAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(refreshToken);
+
+        var refreshTokenRequest = new RefreshTokenRequest { RefreshToken = token };
+
+        var result = await _authenticationService.RefreshTokenAsync(refreshTokenRequest, CancellationToken.None);
+
+        var refreshTokenResult = Assert.IsType<RefreshTokenInvalid>(result);
+
+        _refreshTokenRepository.Verify(x => x.GetByTokenAsync(token, CancellationToken.None), Times.Once);
+        _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
+        _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_WhenTokenIsExpired_ReturnsRefreshTokenInvalid()
+    {
+        var token = "some-existing-token";
+        var refreshToken = new RefreshToken { ExpiresAt = DateTime.UtcNow.AddDays(-1) };
+
+        _refreshTokenRepository
+            .Setup(x => x.GetByTokenAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(refreshToken);
+
+        var refreshTokenRequest = new RefreshTokenRequest { RefreshToken = token };
+
+        var result = await _authenticationService.RefreshTokenAsync(refreshTokenRequest, CancellationToken.None);
+
+        var refreshTokenResult = Assert.IsType<RefreshTokenInvalid>(result);
+
+        _refreshTokenRepository.Verify(x => x.GetByTokenAsync(token, CancellationToken.None), Times.Once);
+        _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
+        _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_WhenUserIsInactive_ReturnsRefreshTokenInvalid()
+    {
+        var token = "some-existing-token";
+        var refreshToken = new RefreshToken { Token = token, ExpiresAt = DateTime.UtcNow.AddDays(10), User = new User { IsActive = false} };
+
+        _refreshTokenRepository
+            .Setup(x => x.GetByTokenAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(refreshToken);
+
+        var refreshTokenRequest = new RefreshTokenRequest { RefreshToken = token };
+
+        var result = await _authenticationService.RefreshTokenAsync(refreshTokenRequest, CancellationToken.None);
+
+        var refreshTokenResult = Assert.IsType<RefreshTokenInvalid>(result);
+
+        _refreshTokenRepository.Verify(x => x.GetByTokenAsync(token, CancellationToken.None), Times.Once);
+        _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
+        _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_WhenUserNotFound_ReturnsRefreshTokenInvalid()
+    {
+        var token = "some-existing-token";
+        var refreshToken = new RefreshToken { Token = token, ExpiresAt = DateTime.UtcNow.AddDays(10)};
+
+        _refreshTokenRepository
+            .Setup(x => x.GetByTokenAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(refreshToken);
+
+        var refreshTokenRequest = new RefreshTokenRequest { RefreshToken = token };
+
+        var result = await _authenticationService.RefreshTokenAsync(refreshTokenRequest, CancellationToken.None);
+
+        var refreshTokenResult = Assert.IsType<RefreshTokenInvalid>(result);
+
+        _refreshTokenRepository.Verify(x => x.GetByTokenAsync(token, CancellationToken.None), Times.Once);
+        _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
+        _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_WhenTokenValid_ReturnsRefreshTokenSucceeded()
+    {
+        var oldRefreshToken = "some-existing-token";
+        var newRefreshToken = "some-new-refresh-token";
+        var accessToken = "some-new -access-token";
+        var expiresAt = DateTime.UtcNow.AddDays(2);
+        var userId = Guid.NewGuid().ToString();
+        var user = new User { IsActive = true, Id = userId };
+        var refreshToken = new RefreshToken { Token = oldRefreshToken, User = user,  ExpiresAt = DateTime.UtcNow.AddDays(10) };
+
+        var tokenResponse = new TokenResponse { AccessToken = accessToken, ExpiresAt = expiresAt, TokenType = "Bearer", RefreshToken = newRefreshToken };
+
+        _refreshTokenRepository
+            .Setup(x => x.GetByTokenAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(refreshToken);
+
+        _refreshTokenRepository
+            .Setup(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _refreshTokenRepository
+            .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _tokenService
+            .Setup(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(tokenResponse);
+
+        var refreshTokenRequest = new RefreshTokenRequest { RefreshToken = oldRefreshToken };
+
+        var result = await _authenticationService.RefreshTokenAsync(refreshTokenRequest, CancellationToken.None);
+
+        var refreshTokenResult = Assert.IsType<RefreshTokenSucceeded>(result);
+
+        _refreshTokenRepository.Verify(x => x.GetByTokenAsync(oldRefreshToken, CancellationToken.None), Times.Once);
+        _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Once);
+        _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _tokenService.Verify(x => x.GenerateTokensAsync(user, CancellationToken.None), Times.Once);
+    }
+
+    [Fact]
+    public async Task RefreshToken_WhenValid_RotatesTokenAndReturnsNewTokens()
+    {
+        var oldRefreshToken = new RefreshToken
+        {
+            Id = 1,
+            Token = "old-refresh-token",
+            UserId = "user-1",
+            CreatedAt = DateTimeOffset.UtcNow.AddDays(-1),
+            ExpiresAt = DateTimeOffset.UtcNow.AddDays(6),
+            User = new User
+            {
+                Id = "user-1",
+                Email = Email,
+                UserName = Email,
+                IsActive = true
+            }
+        };
+
+        var newTokenResponse = new TokenResponse
+        {
+            AccessToken = "new-access-token",
+            RefreshToken = "new-refresh-token",
+            ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(15),
+            TokenType = "Bearer"
+        };
+
+        _refreshTokenRepository.Setup(x => x.GetByTokenAsync(oldRefreshToken.Token, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(oldRefreshToken);
+
+        _tokenService.Setup(x => x.GenerateTokensAsync(oldRefreshToken.User, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(newTokenResponse);
+
+        RefreshToken? replacementToken = null;
+
+        _refreshTokenRepository.Setup(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()))
+            .Callback<RefreshToken, CancellationToken>((token, _) => replacementToken = token)
+            .Returns(Task.CompletedTask);
+
+        _refreshTokenRepository
+            .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var result = await _authenticationService.RefreshTokenAsync(
+            new RefreshTokenRequest
+            {
+                RefreshToken = oldRefreshToken.Token
+            },
+            CancellationToken.None);
+
+        var success = Assert.IsType<RefreshTokenSucceeded>(result);
+
+        Assert.Equal(newTokenResponse.AccessToken, success.Tokens.AccessToken);
+        Assert.Equal(newTokenResponse.RefreshToken, success.Tokens.RefreshToken);
+        Assert.NotNull(oldRefreshToken.RevokedAt);
+        Assert.Equal(newTokenResponse.RefreshToken, oldRefreshToken.ReplacedBy);
+        Assert.NotNull(replacementToken);
+        Assert.Equal(newTokenResponse.RefreshToken, replacementToken.Token);
+        Assert.Equal(oldRefreshToken.UserId, replacementToken.UserId);
+
+        _refreshTokenRepository.Verify(x => x.GetByTokenAsync(oldRefreshToken.Token, CancellationToken.None), Times.Once);
+        _tokenService.Verify(x => x.GenerateTokensAsync(oldRefreshToken.User, CancellationToken.None), Times.Once);
+
+        _refreshTokenRepository.Verify(
+            x => x.AddAsync(It.Is<RefreshToken>(r =>
+                    r.Token == newTokenResponse.RefreshToken &&
+                    r.UserId == oldRefreshToken.UserId),
+                CancellationToken.None),
+            Times.Once);
+
+        _refreshTokenRepository.Verify(x => x.SaveChangesAsync(CancellationToken.None), Times.Once);
+    }
+
+    [Fact]
+    public async Task RefreshToken_WhenTokenWasAlreadyRotated_ReturnsInvalidAndDoesNotRotateAgain()
+    {
+        var oldRefreshToken = new RefreshToken
+        {
+            Id = 1,
+            Token = "old-refresh-token",
+            UserId = "user-1",
+            CreatedAt = DateTimeOffset.UtcNow.AddDays(-1),
+            ExpiresAt = DateTimeOffset.UtcNow.AddDays(6),
+            RevokedAt = DateTimeOffset.UtcNow.AddMinutes(-5),
+            ReplacedBy = "new-refresh-token",
+            User = new User
+            {
+                Id = "user-1",
+                Email = Email,
+                UserName = Email,
+                IsActive = true
+            }
+        };
+
+        _refreshTokenRepository.Setup(x => x.GetByTokenAsync(oldRefreshToken.Token, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(oldRefreshToken);
+
+        var result = await _authenticationService.RefreshTokenAsync(
+            new RefreshTokenRequest
+            {
+                RefreshToken = oldRefreshToken.Token
+            },
+            CancellationToken.None);
+
+        Assert.IsType<RefreshTokenInvalid>(result);
+
+        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+
+        _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
+
+        _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
 }

@@ -126,10 +126,10 @@ public class AuthenticationService(
         if (refreshToken.IsExpired)
             return new RefreshTokenInvalid();
 
-        if (!refreshToken.User.IsActive)
+        if (refreshToken.User is null || !refreshToken.User.IsActive)
             return new RefreshTokenInvalid();
 
-        var tokens = await tokenService.GenerateTokensAsync(refreshToken.User, cancellationToken);
+        var tokens = await tokenService.GenerateTokensAsync(refreshToken.User!, cancellationToken);
 
         refreshToken.RevokedAt = DateTimeOffset.UtcNow;
         refreshToken.ReplacedBy = tokens.RefreshToken;
