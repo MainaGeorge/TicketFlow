@@ -113,9 +113,39 @@ public class AuthenticationService(
         return new AccountActivationFailed(updatedUser.Errors);
     }
 
-    public Task<RefreshTokenResult> RefreshTokenAsync(RefreshTokenRequest request, CancellationToken cancellationToken = default)
+    public async Task<RefreshTokenResult> RefreshTokenAsync(RefreshTokenRequest request, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var refreshToken = await refreshTokenRepository.GetByTokenAsync(request.RefreshToken, cancellationToken);
+
+        if (refreshToken is null)
+            return new RefreshTokenInvalid();
+
+        if (refreshToken.IsRevoked)
+            return new RefreshTokenInvalid();
+
+        if (refreshToken.IsExpired)
+            return new RefreshTokenInvalid();
+
+        if (!refreshToken.User.IsActive)
+            return new RefreshTokenInvalid();
+
+        var tokens = await tokenService.GenerateTokensAsync(refreshToken.User, cancellationToken);
+
+        refreshToken.RevokedAt = DateTimeOffset.UtcNow;
+        refreshToken.ReplacedBy = tokens.RefreshToken;
+
+        var replacementToken = new RefreshToken
+        {
+            Token = tokens.RefreshToken,
+            UserId = refreshToken.UserId,
+            CreatedAt = DateTimeOffset.UtcNow,
+            ExpiresAt = DateTimeOffset.UtcNow.AddDays(7)
+        };
+
+        await refreshTokenRepository.AddAsync(replacementToken, cancellationToken);
+        await refreshTokenRepository.SaveChangesAsync(cancellationToken);
+
+        return new RefreshTokenSucceeded(tokens);
     }
 
     public async Task<RegisterResult> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken = default)
