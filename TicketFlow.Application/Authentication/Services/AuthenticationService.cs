@@ -2,10 +2,15 @@
 using TicketFlow.Application.Authentication.Interfaces;
 using TicketFlow.Application.Authentication.Models;
 using TicketFlow.Contracts.DTOs;
+using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Application.Authentication.Services;
 
-public class AuthenticationService(IIdentityService identityService, ITokenService tokenService, ILogger<AuthenticationService> logger) : IAuthenticationService
+public class AuthenticationService(
+    IIdentityService identityService,
+    ITokenService tokenService,
+    IRefreshTokenRepository refreshTokenRepository,
+    ILogger<AuthenticationService> logger) : IAuthenticationService
 {
     public async Task<AccountResult> DeactivateAccountAsync(string email, CancellationToken cancellationToken = default)
     {
@@ -62,6 +67,18 @@ public class AuthenticationService(IIdentityService identityService, ITokenServi
 
         var tokens = await tokenService.GenerateTokensAsync(user, cancellationToken);
 
+        var refreshToken = new RefreshToken
+        {
+            Token = tokens.RefreshToken,
+            UserId = user.Id,
+            CreatedAt = DateTimeOffset.UtcNow,
+            ExpiresAt = DateTimeOffset.UtcNow.AddDays(7)
+        };
+
+        await refreshTokenRepository.AddAsync(refreshToken, cancellationToken);
+
+        await refreshTokenRepository.SaveChangesAsync(cancellationToken);
+
         logger.LogInformation("user {Email} successfully logged in", request.Email);
 
         return new LoginSucceeded(tokens);
@@ -94,6 +111,11 @@ public class AuthenticationService(IIdentityService identityService, ITokenServi
 
         logger.LogInformation("User {Email} reactivation failed", email);
         return new AccountActivationFailed(updatedUser.Errors);
+    }
+
+    public Task<RefreshTokenResult> RefreshTokenAsync(RefreshTokenRequest request, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
     }
 
     public async Task<RegisterResult> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken = default)

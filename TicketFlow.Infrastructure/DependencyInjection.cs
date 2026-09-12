@@ -37,6 +37,7 @@ public static class DependencyInjection
         services.AddScoped<ISeatsRepository, SeatsRepository>();
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
         return services;
     }
