@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using TicketFlow.Application.Background;
 using TicketFlow.Application.Bookings.Exceptions;
 using TicketFlow.Application.Bookings.Interfaces;
 using TicketFlow.Application.Bookings.Models;
@@ -6,7 +8,7 @@ using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Application.Bookings.Services;
 
-public class BookingsService(IBookingRepository bookingRepository, ILogger<BookingsService> logger) : IBookingService
+public class BookingsService(IBookingRepository bookingRepository, IBackgroundTaskQueue backgroundTaskQueue, ILogger<BookingsService> logger) : IBookingService
 {
     public async Task<BookingBaseResult> CreateBookingAsync(string userId, int seatId, CancellationToken cancellationToken)
     {
@@ -42,6 +44,16 @@ public class BookingsService(IBookingRepository bookingRepository, ILogger<Booki
         try
         {
             await bookingRepository.SaveChangesAsync(seatId, cancellationToken);
+
+            var confirmationWork = new BookingConfirmationWork(booking.Id, booking.UserId);
+
+            await backgroundTaskQueue.QueueAsync(async (serviceProvider, ct) =>
+            {
+                var processor = serviceProvider.GetRequiredService<IBookingConfirmationProcessor>();
+                await processor.ProcessAsync(confirmationWork, ct);
+
+            }, cancellationToken);
+
             return new BookingCreated(booking);
         }
         catch (SeatAlreadyBookedException)

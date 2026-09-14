@@ -5,7 +5,7 @@ namespace TicketFlow.Infrastructure.Background;
 
 public class BackgroundTaskQueue : IBackgroundTaskQueue
 {
-    private readonly Channel<Func<CancellationToken, ValueTask>> _queue;
+    private readonly Channel<Func<IServiceProvider, CancellationToken, ValueTask>> _queue;
 
     public BackgroundTaskQueue()
     {
@@ -16,17 +16,17 @@ public class BackgroundTaskQueue : IBackgroundTaskQueue
             SingleWriter = false
         };
 
-        _queue = Channel.CreateBounded<Func<CancellationToken, ValueTask>>(options);
+        _queue = Channel.CreateBounded<Func<IServiceProvider, CancellationToken, ValueTask>>(options);
     }
 
-    public async ValueTask QueueAsync(Func<CancellationToken, ValueTask> workItem, CancellationToken cancellationToken = default)
+    public async ValueTask QueueAsync(Func<IServiceProvider, CancellationToken, ValueTask> workItem, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(workItem);
 
         await _queue.Writer.WriteAsync(workItem, cancellationToken);
     }
 
-    public async ValueTask<Func<CancellationToken, ValueTask>> DequeueAsync(CancellationToken cancellationToken)
+    public async ValueTask<Func<IServiceProvider, CancellationToken, ValueTask>> DequeueAsync(CancellationToken cancellationToken)
     {
         return await _queue.Reader.ReadAsync(cancellationToken);
     }

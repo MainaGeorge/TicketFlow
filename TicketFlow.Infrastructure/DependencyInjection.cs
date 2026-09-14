@@ -41,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
+        services.AddScoped<IBookingConfirmationProcessor, BookingConfrimationProcessor>();
         services.AddHostedService<QueuedBackgroundService>();
 
         return services;

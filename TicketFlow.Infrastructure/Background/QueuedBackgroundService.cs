@@ -1,10 +1,11 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using TicketFlow.Application.Background;
 
 namespace TicketFlow.Infrastructure.Background;
 
-public class QueuedBackgroundService(IBackgroundTaskQueue taskQueue, ILogger<QueuedBackgroundService> logger) : BackgroundService
+public class QueuedBackgroundService(IBackgroundTaskQueue taskQueue, IServiceScopeFactory scopeFactory, ILogger<QueuedBackgroundService> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -15,12 +16,13 @@ public class QueuedBackgroundService(IBackgroundTaskQueue taskQueue, ILogger<Que
             try
             {
                 var workItem = await taskQueue.DequeueAsync(stoppingToken);
+                await using var scope = scopeFactory.CreateAsyncScope();
 
-                await workItem(stoppingToken);
+                await workItem(scope.ServiceProvider, stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
-                // shut down the application
+                // shut down the application, this should not be logged as an error.
             }
             catch (Exception ex)
             {
