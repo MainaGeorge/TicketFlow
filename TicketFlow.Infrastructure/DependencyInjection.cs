@@ -3,10 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TicketFlow.Application.Authentication.Interfaces;
+using TicketFlow.Application.Background;
 using TicketFlow.Application.Bookings.Interfaces;
 using TicketFlow.Application.Events.Interfaces;
 using TicketFlow.Application.Seats.Interfaces;
 using TicketFlow.Domain.Entities;
+using TicketFlow.Infrastructure.Background;
 using TicketFlow.Infrastructure.Persistence;
 using TicketFlow.Infrastructure.Persistence.Repositories;
 using TicketFlow.Infrastructure.Services;
@@ -38,6 +40,8 @@ public static class DependencyInjection
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
+        services.AddHostedService<QueuedBackgroundService>();
 
         return services;
     }
