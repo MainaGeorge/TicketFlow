@@ -43,6 +43,7 @@ public static class DependencyInjection
         services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
         services.AddScoped<IBookingConfirmationProcessor, BookingConfrimationProcessor>();
         services.AddHostedService<QueuedBackgroundService>();
+        services.Configure<BackgroundRetryOptions>(configuration.GetSection("BackgroundRetry"));
 
         return services;
     }
