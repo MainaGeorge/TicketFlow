@@ -41,10 +41,11 @@ public static class DependencyInjection
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
-        services.AddScoped<IBookingConfirmationProcessor, BookingConfrimationProcessor>();
+        services.AddScoped<IBookingConfirmationProcessor, BookingConfirmationProcessor>();
         services.AddHostedService<QueuedBackgroundService>();
         services.Configure<BackgroundRetryOptions>(configuration.GetSection("BackgroundRetry"));
         services.AddScoped<IFailedBackgroundJobStore, FailedBackgroundJobStore>();
+        services.AddScoped<IProcessedBackgroundJobStore, ProcessedBackgroundJobStore>();
 
         return services;
     }

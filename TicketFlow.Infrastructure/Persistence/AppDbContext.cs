@@ -11,6 +11,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<FailedBackgroundJob> FailedBackgroundJobs => Set<FailedBackgroundJob>();
+    public DbSet<ProcessedBackgroundJob> ProcessedBackgroundJobs => Set<ProcessedBackgroundJob>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
