@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 using TicketFlow.Application.Background;
 using TicketFlow.Application.Bookings.Exceptions;
 using TicketFlow.Application.Bookings.Interfaces;
@@ -47,12 +48,18 @@ public class BookingsService(IBookingRepository bookingRepository, IBackgroundTa
 
             var confirmationWork = new BookingConfirmationWork(booking.Id, booking.UserId);
 
-            await backgroundTaskQueue.QueueAsync(async (serviceProvider, ct) =>
-            {
-                var processor = serviceProvider.GetRequiredService<IBookingConfirmationProcessor>();
-                await processor.ProcessAsync(confirmationWork, ct);
+            var payload = JsonSerializer.Serialize(confirmationWork);
 
-            }, cancellationToken);
+            await backgroundTaskQueue.QueueAsync(
+                new BackgroundWorkItem(
+                    JobType: nameof(BookingConfirmationWork),
+                    Payload: payload,
+                    ExecuteAsync: async (serviceProviver, ct) =>
+                    {
+                        var processor = serviceProviver.GetRequiredService<IBookingConfirmationProcessor>();
+                        await processor.ProcessAsync(confirmationWork, ct);
+                    }),
+                cancellationToken);
 
             return new BookingCreated(booking);
         }

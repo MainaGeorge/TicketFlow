@@ -158,14 +158,14 @@ public class BookingsServiceTests
             .ReturnsAsync(seat);
 
         _backgroundTaskQueue
-            .Setup(x => x.QueueAsync(It.IsAny<Func<IServiceProvider, CancellationToken, ValueTask>>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()))
             .Returns(ValueTask.CompletedTask);
 
         var result = await _bookingService.CreateBookingAsync(UserId, seatId, CancellationToken.None);
 
         _repository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == UserId && b.SeatId == seatId), It.IsAny<CancellationToken>()), Times.Once);
         _repository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
-        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<Func<IServiceProvider, CancellationToken, ValueTask>>(), CancellationToken.None), Times.Once);
+        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), CancellationToken.None), Times.Once);
 
         Assert.NotNull(createdBooking);
         Assert.Equal(UserId, createdBooking.UserId);
@@ -199,7 +199,7 @@ public class BookingsServiceTests
             .Returns(Task.CompletedTask);
 
         _backgroundTaskQueue
-            .Setup(x => x.QueueAsync(It.IsAny<Func<IServiceProvider, CancellationToken, ValueTask>>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()))
             .Returns(ValueTask.CompletedTask);
 
         await _bookingService.CreateBookingAsync(UserId, seatId, cancellationToken);
@@ -210,7 +210,7 @@ public class BookingsServiceTests
 
         _repository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), cancellationToken), Times.Once);
 
-        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<Func<IServiceProvider, CancellationToken, ValueTask>>(), cancellationToken), Times.Once);
+        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), cancellationToken), Times.Once);
     }
 
     [Fact]
@@ -237,7 +237,7 @@ public class BookingsServiceTests
         var result = await Assert.ThrowsAsync<InvalidOperationException>(
             () => _bookingService.CreateBookingAsync(UserId, seatId,CancellationToken.None));
 
-        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<Func<IServiceProvider, CancellationToken, ValueTask>>(), It.IsAny<CancellationToken>()), Times.Never);
+        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()), Times.Never);
 
         Assert.Equal("Database unavailable", result.Message);
     }
@@ -253,7 +253,7 @@ public class BookingsServiceTests
 
         var result = await _bookingService.CreateBookingAsync(UserId, seatId, CancellationToken.None);
         _repository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == UserId && b.SeatId == seatId), It.IsAny<CancellationToken>()), Times.Never);
-        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<Func<IServiceProvider, CancellationToken, ValueTask>>(), It.IsAny<CancellationToken>()), Times.Never);
+        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()), Times.Never);
 
         Assert.IsType<BookingSeatNotFound>(result);
     }
@@ -270,7 +270,7 @@ public class BookingsServiceTests
         var result = await _bookingService.CreateBookingAsync(UserId, seat.Id, CancellationToken.None);
 
         _repository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == UserId && b.SeatId == seat.Id), It.IsAny<CancellationToken>()), Times.Never);
-        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<Func<IServiceProvider, CancellationToken, ValueTask>>(), It.IsAny<CancellationToken>()), Times.Never);
+        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()), Times.Never);
 
         Assert.IsType<BookingSeatAlreadyBooked>(result);
     }
@@ -287,7 +287,7 @@ public class BookingsServiceTests
         var result = await _bookingService.CreateBookingAsync(UserId, seat.Id, CancellationToken.None);
 
         _repository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == UserId && b.SeatId == seat.Id), It.IsAny<CancellationToken>()), Times.Never);
-        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<Func<IServiceProvider, CancellationToken, ValueTask>>(), It.IsAny<CancellationToken>()), Times.Never);
+        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()), Times.Never);
 
         Assert.IsType<BookingEventUnavailable>(result);
     }
@@ -315,7 +315,7 @@ public class BookingsServiceTests
             .ReturnsAsync(seat);
 
         _backgroundTaskQueue
-            .Setup(x => x.QueueAsync(It.IsAny<Func<IServiceProvider, CancellationToken, ValueTask>>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()))
             .Returns(ValueTask.CompletedTask);
 
         var result = await Assert.ThrowsAsync<InvalidOperationException>(() => _bookingService.CreateBookingAsync(UserId, seatId, CancellationToken.None));
@@ -323,6 +323,6 @@ public class BookingsServiceTests
 
         _repository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == UserId && b.SeatId == seatId), It.IsAny<CancellationToken>()), Times.Once);
         _repository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
-        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<Func<IServiceProvider, CancellationToken, ValueTask>>(), CancellationToken.None), Times.Never);
+        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), CancellationToken.None), Times.Never);
     }
 }

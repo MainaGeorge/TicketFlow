@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using TicketFlow.Application.Background;
+using TicketFlow.Domain.Background;
 
 namespace TicketFlow.Infrastructure.Background;
 
@@ -24,7 +25,26 @@ public class QueuedBackgroundService(
         return TimeSpan.FromMilliseconds(cappedDelayMs + jitter);
     }
 
-    private async Task ExecuteWithRetryAsync(Func<IServiceProvider, CancellationToken, ValueTask> workItem, CancellationToken cancellationToken)
+    private async Task StoreFailedJobAsync(BackgroundWorkItem workItem, Exception exception, int attemptCount, CancellationToken cancellationToken)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+
+        var store = scope.ServiceProvider.GetRequiredService<IFailedBackgroundJobStore>();
+
+        var failedJob = new FailedBackgroundJob
+        {
+            JobType = workItem.JobType,
+            Payload = workItem.Payload,
+            FailureReason = exception.Message,
+            ExceptionType = exception.GetType().FullName,
+            AttemptCount = attemptCount,
+            FailedAt = DateTimeOffset.UtcNow
+        };
+
+        await store.SaveAsync(failedJob, cancellationToken);
+    }
+
+    private async Task ExecuteWithRetryAsync(BackgroundWorkItem workItem, CancellationToken cancellationToken)
     {
         for(var attempt = 1; attempt <= _retryOptions.MaxAttempts; attempt++)
         {
@@ -32,7 +52,7 @@ public class QueuedBackgroundService(
             {
                 await using var scope = scopeFactory.CreateAsyncScope();
 
-                await workItem(scope.ServiceProvider, cancellationToken);
+                await workItem.ExecuteAsync(scope.ServiceProvider, cancellationToken);
 
                 return;
             }
@@ -40,7 +60,15 @@ public class QueuedBackgroundService(
             {
                 throw;
             }
-            catch(Exception ex)
+            catch (PermanentBackgroundException ex)
+            {
+                logger.LogError(ex, "Background work item failed permanently. No retry will be attempted.");
+
+                await StoreFailedJobAsync(workItem, ex, attempt, cancellationToken);
+
+                return;
+            }
+            catch (TransientBackgroundException ex)
             {
                 var delay = CalculateRetryDelay(attempt);
 
@@ -52,8 +80,18 @@ public class QueuedBackgroundService(
                 {
                     logger.LogError(ex, "Background work item failed after {MaxAttempts} attempts", _retryOptions.MaxAttempts);
 
+                    await StoreFailedJobAsync(workItem, ex, attempt, cancellationToken);
+
                     return;
                 }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Unexpected background work item failure. No retry will be attempted.");
+
+                await StoreFailedJobAsync(workItem, ex, attempt, cancellationToken);
+
+                return;
             }
         }
     }
@@ -72,6 +110,7 @@ public class QueuedBackgroundService(
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
                 // shut down the application, this should not be logged as an error.
+                logger.LogInformation("Background service shutting down gracefully...");
             }
             catch (Exception ex)
             {

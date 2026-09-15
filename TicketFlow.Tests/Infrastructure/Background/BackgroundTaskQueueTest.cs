@@ -1,4 +1,5 @@
-﻿using TicketFlow.Infrastructure.Background;
+﻿using TicketFlow.Application.Background;
+using TicketFlow.Infrastructure.Background;
 
 namespace TicketFlow.Tests.Infrastructure.Background;
 
@@ -9,22 +10,22 @@ public class BackgroundTaskQueueTest
     {
         var queue = new BackgroundTaskQueue();
 
-        Func<IServiceProvider, CancellationToken, ValueTask> workItem = (_, _) => ValueTask.CompletedTask;
 
-        await queue.QueueAsync(workItem);
+        var backgroundWorkItem = new BackgroundWorkItem("TestJob", "TestPayload", (_, _) => ValueTask.CompletedTask);
+
+        await queue.QueueAsync(backgroundWorkItem);
 
         var result = await queue.DequeueAsync(CancellationToken.None);
 
-        Assert.Same(workItem, result);
+        Assert.Same(backgroundWorkItem, result);
     }
 
     [Fact]
     public async Task DequeueAsync_ReturnsItemsInFifoOrder()
     {
         var queue = new BackgroundTaskQueue();
-
-        Func<IServiceProvider, CancellationToken, ValueTask> first = (_, _) => ValueTask.CompletedTask;
-        Func<IServiceProvider, CancellationToken, ValueTask> second = (_, _) => ValueTask.CompletedTask;
+        var first = new BackgroundWorkItem("TestJob", "TestPayload", (_, _) => ValueTask.CompletedTask);
+        var second = new BackgroundWorkItem("TestJob", "TestPayload", (_, _) => ValueTask.CompletedTask);
 
         await queue.QueueAsync(first);
         await queue.QueueAsync(second);
@@ -45,7 +46,7 @@ public class BackgroundTaskQueueTest
 
         Assert.False(dequeueTask.IsCompleted);
 
-        Func<IServiceProvider, CancellationToken, ValueTask> workItem = (_, _) => ValueTask.CompletedTask;
+        var workItem = new BackgroundWorkItem("TestJobType", "TestPayload", (_, _) => ValueTask.CompletedTask) ;
 
         await queue.QueueAsync(workItem);
 
