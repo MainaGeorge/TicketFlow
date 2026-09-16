@@ -7,6 +7,8 @@ public sealed record BookingCreated(Booking Booking) : BookingBaseResult(Booking
 public sealed record BookingSeatNotFound : BookingBaseResult;
 public sealed record BookingSeatAlreadyBooked : BookingBaseResult;
 public sealed record BookingEventUnavailable : BookingBaseResult;
+public sealed record BookingEventNotFound : BookingBaseResult;
+public sealed record BookingSeatNotInEvent : BookingBaseResult;
 public sealed record BookingNotFound : BookingBaseResult;
 public sealed record BookingResult(Booking Booking) : BookingBaseResult(Booking);
 

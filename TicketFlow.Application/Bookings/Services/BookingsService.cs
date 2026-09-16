@@ -11,9 +11,9 @@ namespace TicketFlow.Application.Bookings.Services;
 
 public class BookingsService(IBookingRepository bookingRepository, IBackgroundTaskQueue backgroundTaskQueue, ILogger<BookingsService> logger) : IBookingService
 {
-    public async Task<BookingBaseResult> CreateBookingAsync(string userId, int seatId, CancellationToken cancellationToken)
+    public async Task<BookingBaseResult> CreateBookingAsync(string userId, int eventId, int seatId, CancellationToken cancellationToken)
     {
-        var seat = await bookingRepository.GetSeatForBookingAsync(seatId, cancellationToken);
+        var seat = await bookingRepository.GetSeatForBookingAsync(eventId, seatId, cancellationToken);
 
         if (seat is null)
         {

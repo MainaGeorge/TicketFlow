@@ -22,7 +22,7 @@ public class EventsController(IEventsService eventService, ISeatsService seatsSe
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (userId == null)
+        if (string.IsNullOrWhiteSpace(userId))
         {
             logger.LogWarning("Event creation request without authenticated user.");
 
@@ -95,7 +95,7 @@ public class EventsController(IEventsService eventService, ISeatsService seatsSe
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (userId == null)
+        if (string.IsNullOrWhiteSpace(userId))
         {
             logger.LogWarning("Event creation request without authenticated user.");
 

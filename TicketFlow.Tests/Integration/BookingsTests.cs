@@ -13,9 +13,9 @@ public class BookingsTests
     {
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
-        var (userToken, seatId) = await CreateUserAndSeat(client, factory);
+        var (userToken, eventId, seatId) = await CreateUserAndSeat(client, factory);
         TestHelpers.SetBearerToken(client, userToken);
-        var response = await client.PostAsJsonAsync("/api/bookings", new { seatId });
+        var response = await client.PostAsJsonAsync("/api/bookings", new { eventId, seatId });
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
 
@@ -37,7 +37,20 @@ public class BookingsTests
         using var client = factory.CreateClient();
         var token = await TestHelpers.RegisterAndLogin(client, "user@test.com");
         TestHelpers.SetBearerToken(client, token);
-        var response = await client.PostAsJsonAsync("/api/bookings", new { seatId = 999999 });
+        var eventResponse = await client.PostAsJsonAsync("api/events", new { name = "Test Concert", venue = "Test Arena", eventDate = DateTime.UtcNow.AddDays(30) });
+        var eventDto = await eventResponse.Content.ReadFromJsonAsync<EventResponse>();
+        var response = await client.PostAsJsonAsync("/api/bookings", new { eventId = eventDto!.Id, seatId = 999999 });
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateBooking_WithUnknownEvent_Returns404()
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        using var client = factory.CreateClient();
+        var token = await TestHelpers.RegisterAndLogin(client, "user@test.com");
+        TestHelpers.SetBearerToken(client, token);
+        var response = await client.PostAsJsonAsync("/api/bookings", new { eventId = 41250, seatId = 999999 });
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
@@ -47,13 +60,13 @@ public class BookingsTests
     {
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
-        var (user1Token, seatId) = await CreateUserAndSeat(client, factory, "user1@test.com");
+        var (user1Token, eventId, seatId) = await CreateUserAndSeat(client, factory, "user1@test.com");
         TestHelpers.SetBearerToken(client, user1Token);
-        var firstResponse = await client.PostAsJsonAsync("/api/bookings", new { seatId });
+        var firstResponse = await client.PostAsJsonAsync("/api/bookings", new { eventId, seatId });
         Assert.Equal(HttpStatusCode.Created, firstResponse.StatusCode);
         var user2Token = await TestHelpers.RegisterAndLogin(client, "user2@test.com");
         TestHelpers.SetBearerToken(client, user2Token);
-        var secondResponse = await client.PostAsJsonAsync("/api/bookings", new { seatId });
+        var secondResponse = await client.PostAsJsonAsync("/api/bookings", new { eventId, seatId });
         Assert.Equal(HttpStatusCode.Conflict, secondResponse.StatusCode);
     }
 
@@ -63,10 +76,10 @@ public class BookingsTests
     {
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
-        var (token, seatId) = await CreateUserAndSeat(client, factory);
+        var (token, eventId, seatId) = await CreateUserAndSeat(client, factory);
         TestHelpers.SetBearerToken(client, token);
 
-        var createResponse = await client.PostAsJsonAsync("/api/bookings", new { seatId });
+        var createResponse = await client.PostAsJsonAsync("/api/bookings", new { eventId, seatId });
         Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
 
         var response = await client.GetAsync("/api/bookings/my");
@@ -85,9 +98,9 @@ public class BookingsTests
         using var client = factory.CreateClient();
 
         // User 1 creates a booking.
-        var (user1Token, seatId) = await CreateUserAndSeat(client, factory, "user1@test.com");
+        var (user1Token, eventId, seatId) = await CreateUserAndSeat(client, factory, "user1@test.com");
         TestHelpers.SetBearerToken(client, user1Token);
-        var createResponse = await client.PostAsJsonAsync("/api/bookings", new { seatId });
+        var createResponse = await client.PostAsJsonAsync("/api/bookings", new { eventId, seatId });
 
         Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
 
@@ -140,7 +153,7 @@ public class BookingsTests
         using var setupClient = factory.CreateClient();
 
         // Create the seat first.
-        var (_, seatId) = await CreateUserAndSeat(setupClient, factory, "setup@test.com");
+        var (_, eventId, seatId) = await CreateUserAndSeat(setupClient, factory, "setup@test.com");
 
         // Create two independent clients/users.
         var client1 = factory.CreateClient();
@@ -151,8 +164,8 @@ public class BookingsTests
         TestHelpers.SetBearerToken(client2, token2);
 
         // Start both requests at the same time.
-        var task1 = client1.PostAsJsonAsync("/api/bookings", new { seatId });
-        var task2 = client2.PostAsJsonAsync("/api/bookings", new { seatId });
+        var task1 = client1.PostAsJsonAsync("/api/bookings", new { eventId, seatId });
+        var task2 = client2.PostAsJsonAsync("/api/bookings", new { eventId, seatId });
         var responses = await Task.WhenAll(task1, task2);
 
         var successfulRequests = responses.Count(r => r.StatusCode == HttpStatusCode.Created);
@@ -167,7 +180,7 @@ public class BookingsTests
         Assert.Equal(1, bookingCount);
     }
 
-    private static async Task<(string Token, int SeatId)>
+    private static async Task<(string Token, int EventId, int SeatId)>
         CreateUserAndSeat(HttpClient client, CustomWebApplicationFactory factory, string email = "user@test.com")
     {
         var token = await TestHelpers.RegisterAndLogin(client, email);
@@ -181,7 +194,7 @@ public class BookingsTests
         seatResponse.EnsureSuccessStatusCode();
         var seatDto = await seatResponse.Content.ReadFromJsonAsync<SeatResponse>();
 
-        return seatDto == null ? throw new InvalidOperationException("Seat was not returned.") : ((string Token, int SeatId))(token, seatDto.Id);
+        return seatDto == null ? throw new InvalidOperationException("Seat was not returned.") : ((string Token, int EventId, int SeatId))(token, eventDto.Id, seatDto.Id);
     }
 
 

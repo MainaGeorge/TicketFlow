@@ -6,18 +6,28 @@ using TicketFlow.Application.Background;
 using TicketFlow.Application.Bookings.Exceptions;
 using TicketFlow.Application.Bookings.Interfaces;
 using TicketFlow.Application.Bookings.Models;
+using TicketFlow.Application.Events.Interfaces;
 using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Application.Bookings.Commands.CreateBooking;
 
 public sealed class CreateBookingCommandHandler(
     IBookingRepository bookingRepository,
+    IEventsRepository eventsRepository,
     IBackgroundTaskQueue backgroundTaskQueue,
     ILogger<CreateBookingCommandHandler> logger) : IRequestHandler<CreateBookingCommand, BookingBaseResult>
 {
     public async Task<BookingBaseResult> Handle(CreateBookingCommand command, CancellationToken cancellationToken)
     {
-        var seat = await bookingRepository.GetSeatForBookingAsync(command.SeatId, cancellationToken);
+        var @event = await eventsRepository.GetEventAsync(command.EventId, cancellationToken);
+
+        if(@event is null)
+        {
+            logger.LogWarning("User: {UserId} tried to book a non existent event: {EventId}", command.UserId, command.EventId);
+            return new BookingEventNotFound();
+        }
+
+        var seat = await bookingRepository.GetSeatForBookingAsync(command.EventId, command.SeatId, cancellationToken);
 
         if (seat is null)
         {

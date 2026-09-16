@@ -28,14 +28,14 @@ internal class BookingRepository(AppDbContext context) : IBookingRepository
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
     }
 
-    public async Task<Seat?> GetSeatForBookingAsync(int seatId, CancellationToken cancellationToken = default)
+    public async Task<Seat?> GetSeatForBookingAsync(int eventId, int seatId, CancellationToken cancellationToken = default)
     {
         return 
             await context
             .Seats
             .Include(s => s.Event)
             .Include(s => s.Booking)
-            .FirstOrDefaultAsync(s => s.Id == seatId, cancellationToken);
+            .FirstOrDefaultAsync(s => s.Id == seatId && s.Event.Id == eventId, cancellationToken);
     }
 
     public async Task<IEnumerable<Booking>> GetUserBookingsAsync(string userId, CancellationToken cancellationToken = default)
