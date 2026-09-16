@@ -5,7 +5,6 @@ using TicketFlow.Application.Background;
 using TicketFlow.Application.Bookings.Exceptions;
 using TicketFlow.Application.Bookings.Interfaces;
 using TicketFlow.Application.Bookings.Models;
-using TicketFlow.Application.Bookings.Services;
 using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Application.Bookings.Commands.CreateBooking;

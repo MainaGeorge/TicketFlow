@@ -1,0 +1,17 @@
+﻿using TicketFlow.Application.Bookings.Interfaces;
+using TicketFlow.Application.Bookings.Models;
+
+namespace TicketFlow.Application.Bookings.Queries.GetBooking;
+
+public class GetBookingQueryHandler(IBookingRepository bookingRepository)
+{
+    public async Task<BookingBaseResult?> HandleAsync(GetBookingQuery command, CancellationToken cancellationToken = default)
+    {
+        var booking = await bookingRepository.GetBookingAsync(command.BookingId, command.UserId, cancellationToken);
+
+        if (booking is null)
+            return new BookingNotFound();
+
+        return new BookingResult(booking);
+    }
+}
