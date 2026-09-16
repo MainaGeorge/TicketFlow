@@ -18,7 +18,7 @@ public class GetBookingQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenBookingExists_ReturnsBooking()
+    public async Task Handle_WhenBookingExists_ReturnsBooking()
     {
         var bookingId = 1;
         var userId = Guid.NewGuid().ToString();
@@ -28,7 +28,7 @@ public class GetBookingQueryHandlerTests
             .Setup(x => x.GetBookingAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Booking { Id = 1, CreatedAt = DateTime.UtcNow, UserId = userId });
 
-        var booking = await _commandHandler.HandleAsync(bookingCommand, CancellationToken.None);
+        var booking = await _commandHandler.Handle(bookingCommand, CancellationToken.None);
 
         var result = Assert.IsType<BookingResult>(booking);
 
@@ -38,7 +38,7 @@ public class GetBookingQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenBookingDoesNotExist_ReturnsNoBooking()
+    public async Task Handle_WhenBookingDoesNotExist_ReturnsNoBooking()
     {
         var bookingId = 1;
         var userId = Guid.NewGuid().ToString();
@@ -48,14 +48,14 @@ public class GetBookingQueryHandlerTests
             .Setup(x => x.GetBookingAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Booking?)null);
 
-        var booking = await _commandHandler.HandleAsync(bookingCommand, CancellationToken.None);
+        var booking = await _commandHandler.Handle(bookingCommand, CancellationToken.None);
         _repository.Verify(x => x.GetBookingAsync(bookingId, userId, It.IsAny<CancellationToken>()), Times.Once);
 
         var result = Assert.IsType<BookingNotFound>(booking);
     }
 
     [Fact]
-    public async Task HandleAsync_PassesCancellationTokenToRepository()
+    public async Task Handle_PassesCancellationTokenToRepository()
     {
         var bookingId = 1;
         using var cts = new CancellationTokenSource();
@@ -71,13 +71,13 @@ public class GetBookingQueryHandlerTests
                 UserId = userId
             });
 
-        await _commandHandler.HandleAsync(bookingCommand, cancellationToken);
+        await _commandHandler.Handle(bookingCommand, cancellationToken);
 
         _repository.Verify(x => x.GetBookingAsync(bookingId, userId, cancellationToken), Times.Once);
     }
 
     [Fact]
-    public async Task HandleAsync_WhenCancellationRequested_PassesCancelledToken()
+    public async Task Handle_WhenCancellationRequested_PassesCancelledToken()
     {
         using var cts = new CancellationTokenSource();
         var userId = Guid.NewGuid().ToString();
@@ -89,11 +89,11 @@ public class GetBookingQueryHandlerTests
             .Setup(x => x.GetBookingAsync(It.IsAny<int>(), It.IsAny<string>(), cts.Token))
             .ThrowsAsync(new OperationCanceledException(cts.Token));
 
-        await Assert.ThrowsAsync<OperationCanceledException>(() => _commandHandler.HandleAsync(new GetBookingQuery(1, userId), cts.Token));
+        await Assert.ThrowsAsync<OperationCanceledException>(() => _commandHandler.Handle(new GetBookingQuery(1, userId), cts.Token));
     }
 
     [Fact]
-    public async Task HandleAsync_WhenRepositoryThrows_PropagatesException()
+    public async Task Handle_WhenRepositoryThrows_PropagatesException()
     {
         var exception = new InvalidOperationException("Unexpected failure");
         var bookingId = 1;
@@ -105,7 +105,7 @@ public class GetBookingQueryHandlerTests
             .ThrowsAsync(exception);
 
         var result = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _commandHandler.HandleAsync(bookingCommand, CancellationToken.None));
+            () => _commandHandler.Handle(bookingCommand, CancellationToken.None));
 
         Assert.Equal("Unexpected failure", result.Message);
     }

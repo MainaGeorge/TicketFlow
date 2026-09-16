@@ -4,7 +4,6 @@ using TicketFlow.Application.Background;
 using TicketFlow.Application.Bookings.Commands.CreateBooking;
 using TicketFlow.Application.Bookings.Interfaces;
 using TicketFlow.Application.Bookings.Models;
-using TicketFlow.Application.Bookings.Services;
 using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Tests.Application.Bookings.Commands.CreateBooking;
@@ -27,7 +26,7 @@ public class CreateBookingCommandHandlerTests
 
 
     [Fact]
-    public async Task HandleAsync_WhenValid_ReturnsCreated()
+    public async Task Handle_WhenValid_ReturnsCreated()
     {
         var seatId = 1;
         var userId = Guid.NewGuid().ToString();
@@ -51,7 +50,7 @@ public class CreateBookingCommandHandlerTests
             .Setup(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()))
             .Returns(ValueTask.CompletedTask);
 
-        var result = await _commandHandler.HandleAsync(new CreateBookingCommand(1, seatId, userId), CancellationToken.None);
+        var result = await _commandHandler.Handle(new CreateBookingCommand(1, seatId, userId), CancellationToken.None);
 
         _repository.Verify(x => x.GetSeatForBookingAsync(seatId, It.IsAny<CancellationToken>()), Times.Once);
         _repository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == userId && b.SeatId == seatId), It.IsAny<CancellationToken>()), Times.Once);
@@ -65,7 +64,7 @@ public class CreateBookingCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_PassesCancellationTokenToRepository()
+    public async Task Handle_PassesCancellationTokenToRepository()
     {
         var seatId = 1;
         var userId = Guid.NewGuid().ToString();
@@ -94,7 +93,7 @@ public class CreateBookingCommandHandlerTests
             .Setup(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()))
             .Returns(ValueTask.CompletedTask);
 
-        await _commandHandler.HandleAsync(new CreateBookingCommand(1, seatId, userId), cancellationToken);
+        await _commandHandler.Handle(new CreateBookingCommand(1, seatId, userId), cancellationToken);
 
         _repository.Verify(x => x.GetSeatForBookingAsync(seatId, cancellationToken), Times.Once);
 
@@ -106,7 +105,7 @@ public class CreateBookingCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenRepositoryThrows_PropagatesException()
+    public async Task Handle_WhenRepositoryThrows_PropagatesException()
     {
         var seatId = 1;
         var userId = Guid.NewGuid().ToString();
@@ -128,7 +127,7 @@ public class CreateBookingCommandHandlerTests
             .ThrowsAsync(exception);
 
         var result = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _commandHandler.HandleAsync(new CreateBookingCommand(1, seatId, userId), CancellationToken.None));
+            () => _commandHandler.Handle(new CreateBookingCommand(1, seatId, userId), CancellationToken.None));
 
         _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()), Times.Never);
 
@@ -136,7 +135,7 @@ public class CreateBookingCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenSeatNotFound_ReturnsSeatNotFound()
+    public async Task Handle_WhenSeatNotFound_ReturnsSeatNotFound()
     {
         var seatId = 5;
         var eventId = 1;
@@ -146,7 +145,7 @@ public class CreateBookingCommandHandlerTests
             .Setup(x => x.GetSeatForBookingAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Seat?)null);
 
-        var result = await _commandHandler.HandleAsync(new CreateBookingCommand(eventId, seatId, userId), CancellationToken.None);
+        var result = await _commandHandler.Handle(new CreateBookingCommand(eventId, seatId, userId), CancellationToken.None);
         _repository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == userId && b.SeatId == seatId), It.IsAny<CancellationToken>()), Times.Never);
         _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()), Times.Never);
 
@@ -154,7 +153,7 @@ public class CreateBookingCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenSeatAlreadyBooked_ReturnsAlreadyBooked()
+    public async Task Handle_WhenSeatAlreadyBooked_ReturnsAlreadyBooked()
     {
         var seat = new Seat { Id = 1, Booking = new Booking { Id = 2 }, Event = new Event { EventDate = DateTime.UtcNow.AddDays(10) } };
         var userId = Guid.NewGuid().ToString();
@@ -163,7 +162,7 @@ public class CreateBookingCommandHandlerTests
             .Setup(x => x.GetSeatForBookingAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(seat);
 
-        var result = await _commandHandler.HandleAsync(new CreateBookingCommand(1, seat.Id, userId), CancellationToken.None);
+        var result = await _commandHandler.Handle(new CreateBookingCommand(1, seat.Id, userId), CancellationToken.None);
 
         _repository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == userId && b.SeatId == seat.Id), It.IsAny<CancellationToken>()), Times.Never);
         _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -172,7 +171,7 @@ public class CreateBookingCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenEventUnavailable_ReturnsEventUnavailable()
+    public async Task Handle_WhenEventUnavailable_ReturnsEventUnavailable()
     {
         var seat = new Seat { Id = 1, Event = new Event { EventDate = DateTime.UtcNow.AddDays(-10) } };
         var userId = Guid.NewGuid().ToString();
@@ -181,7 +180,7 @@ public class CreateBookingCommandHandlerTests
             .Setup(x => x.GetSeatForBookingAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(seat);
 
-        var result = await _commandHandler.HandleAsync(new CreateBookingCommand(1, seat.Id, userId), CancellationToken.None);
+        var result = await _commandHandler.Handle(new CreateBookingCommand(1, seat.Id, userId), CancellationToken.None);
 
         _repository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == userId && b.SeatId == seat.Id), It.IsAny<CancellationToken>()), Times.Never);
         _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -190,7 +189,7 @@ public class CreateBookingCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenSaveChangesThrowsError_BackgroundTaskNotQueued()
+    public async Task Handle_WhenSaveChangesThrowsError_BackgroundTaskNotQueued()
     {
         var seatId = 1;
         var seat = new Seat { Id = seatId, Event = new Event { EventDate = DateTime.UtcNow.AddDays(10) } };
@@ -216,7 +215,7 @@ public class CreateBookingCommandHandlerTests
             .Setup(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()))
             .Returns(ValueTask.CompletedTask);
 
-        var result = await Assert.ThrowsAsync<InvalidOperationException>(() => _commandHandler.HandleAsync(new CreateBookingCommand(1, seatId, userId), CancellationToken.None));
+        var result = await Assert.ThrowsAsync<InvalidOperationException>(() => _commandHandler.Handle(new CreateBookingCommand(1, seatId, userId), CancellationToken.None));
         Assert.Equal(message, result.Message);
 
         _repository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == userId && b.SeatId == seatId), It.IsAny<CancellationToken>()), Times.Once);

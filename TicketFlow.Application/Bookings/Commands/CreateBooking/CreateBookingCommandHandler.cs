@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using MediatR;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using TicketFlow.Application.Background;
@@ -12,9 +13,9 @@ namespace TicketFlow.Application.Bookings.Commands.CreateBooking;
 public sealed class CreateBookingCommandHandler(
     IBookingRepository bookingRepository,
     IBackgroundTaskQueue backgroundTaskQueue,
-    ILogger<CreateBookingCommandHandler> logger)
+    ILogger<CreateBookingCommandHandler> logger) : IRequestHandler<CreateBookingCommand, BookingBaseResult>
 {
-    public async Task<BookingBaseResult> HandleAsync(CreateBookingCommand command, CancellationToken cancellationToken)
+    public async Task<BookingBaseResult> Handle(CreateBookingCommand command, CancellationToken cancellationToken)
     {
         var seat = await bookingRepository.GetSeatForBookingAsync(command.SeatId, cancellationToken);
 
