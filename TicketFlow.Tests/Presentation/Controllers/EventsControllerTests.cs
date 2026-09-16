@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
 using System.Security.Claims;
+using TicketFlow.Application.Events.Commands;
 using TicketFlow.Application.Events.Interfaces;
 using TicketFlow.Application.Events.Models;
 using TicketFlow.Application.Seats;
@@ -18,6 +20,7 @@ public class EventsControllerTests
     private readonly Mock<ISeatsService> _mockSeatsService;
     private readonly Mock<IEventsService> _mockEventsService;
     private readonly Mock<ILogger<EventsController>> _logger;
+    private readonly Mock<ISender> _sender;
     private readonly EventsController _controller;
     private const string userId = "abc-123";
 
@@ -36,8 +39,9 @@ public class EventsControllerTests
         _mockEventsService = new Mock<IEventsService>();
         _mockSeatsService = new Mock<ISeatsService>();
         _logger = new Mock<ILogger<EventsController>>();
+        _sender = new Mock<ISender>();
 
-        _controller = new EventsController(_mockEventsService.Object, _mockSeatsService.Object, _logger.Object);
+        _controller = new EventsController(_sender.Object, _mockEventsService.Object, _mockSeatsService.Object, _logger.Object);
 
         SetAuthorisation(userId);
     }
@@ -63,8 +67,8 @@ public class EventsControllerTests
     [Fact]
     public async Task CreatedEvent_WhenCreated_Returns201()
     {
-        _mockEventsService
-            .Setup(x => x.CreateEventAsync(It.IsAny<Event>(), userId, It.IsAny<CancellationToken>()))
+        _sender
+            .Setup(x => x.Send(It.IsAny<CreateEventCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new EventCreatedResult(new Event() { Id = 10 }));
 
         var request = new CreateEventRequest
@@ -85,9 +89,9 @@ public class EventsControllerTests
     [Fact]
     public async Task CreatedEvent_WhenEventIsInPast_Returns400()
     {
-        _mockEventsService
-            .Setup(x => x.CreateEventAsync(It.IsAny<Event>(), userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PastEventResult(null));
+        _sender
+             .Setup(x => x.Send(It.IsAny<CreateEventCommand>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync(new PastEventResult(null));
 
         var request = new CreateEventRequest
         {

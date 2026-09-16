@@ -24,4 +24,8 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Application\Events\Queries\" />
+  </ItemGroup>
+
 </Project>

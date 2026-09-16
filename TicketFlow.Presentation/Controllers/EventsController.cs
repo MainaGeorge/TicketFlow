@@ -1,7 +1,9 @@
 ﻿using Asp.Versioning;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using TicketFlow.Application.Events.Commands;
 using TicketFlow.Application.Events.Interfaces;
 using TicketFlow.Application.Events.Models;
 using TicketFlow.Application.Seats;
@@ -15,7 +17,7 @@ namespace TicketFlow.Presentation.Controllers;
 [ApiController]
 [ApiVersion("1.0")]
 [Authorize]
-public class EventsController(IEventsService eventService, ISeatsService seatsService, ILogger<EventsController> logger) : ControllerBase
+public class EventsController(ISender sender, IEventsService eventService, ISeatsService seatsService, ILogger<EventsController> logger) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> CreateEvent([FromBody] CreateEventRequest request, CancellationToken cancellationToken)
@@ -35,14 +37,7 @@ public class EventsController(IEventsService eventService, ISeatsService seatsSe
             });
         }
 
-        var newEvent = new Domain.Entities.Event
-        {
-            Name = request.Name!,
-            EventDate = request.EventDate ?? DateTime.UtcNow,
-            Venue = request.Venue!
-        };
-
-        var @event = await eventService.CreateEventAsync(newEvent, userId, cancellationToken);
+        var @event = await sender.Send(new CreateEventCommand(request.Name!, request.Venue!, request.EventDate ?? DateTime.UtcNow, userId), cancellationToken);
 
         return @event switch
         {
