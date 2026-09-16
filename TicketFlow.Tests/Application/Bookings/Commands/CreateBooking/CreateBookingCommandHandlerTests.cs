@@ -307,4 +307,35 @@ public class CreateBookingCommandHandlerTests
         _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), CancellationToken.None), Times.Never);
 
     }
+
+    [Fact]
+    public async Task Handle_WhenSeatNotFoundForEvent_ReturnsSeatNotFound()
+    {
+        var eventId = 1;
+        var seatId = 10;
+        var userId = Guid.NewGuid().ToString();
+
+        _eventRepository
+            .Setup(x => x.GetEventAsync(eventId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Event
+            {
+                Id = eventId,
+                EventDate = DateTime.UtcNow.AddDays(10)
+            });
+
+        _bookingRepository
+            .Setup(x => x.GetSeatForBookingAsync(eventId, seatId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Seat?)null);
+
+        var result = await _commandHandler.Handle(new CreateBookingCommand(eventId, seatId, userId), CancellationToken.None);
+
+        Assert.IsType<BookingSeatNotFound>(result);
+
+        _eventRepository.Verify(x => x.GetEventAsync(eventId, CancellationToken.None), Times.Once);
+        _bookingRepository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == userId), It.IsAny<CancellationToken>()), Times.Never);
+        _bookingRepository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()), Times.Never);
+
+        Assert.IsType<BookingSeatNotFound>(result);
+    }
 }

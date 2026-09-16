@@ -31,19 +31,19 @@ public sealed class CreateBookingCommandHandler(
 
         if (seat is null)
         {
-            logger.LogWarning("Seat not found. SeatId: {SeatId}", command.SeatId);
+            logger.LogWarning("Seat not found for event. EventId: {EventId}, SeatId: {SeatId}", command.EventId, command.SeatId);
             return new BookingSeatNotFound();
         }
 
         if (seat.Booking is not null)
         {
-            logger.LogWarning("Seat is already booked. SeatId: {SeatId}", command.SeatId);
+            logger.LogWarning("Seat is already booked. SeatId: {SeatId}, EventId: {EventId}", command.SeatId, command.EventId);
             return new BookingSeatAlreadyBooked();
         }
 
         if (seat.Event.EventDate < DateTime.UtcNow)
         {
-            logger.LogWarning("Event is unavailable. SeatId: {SeatId}", command.SeatId);
+            logger.LogWarning("Event is unavailable. SeatId: {SeatId}, EventId: {EventId}", command.SeatId, command.EventId);
             return new BookingEventUnavailable();
         }
 

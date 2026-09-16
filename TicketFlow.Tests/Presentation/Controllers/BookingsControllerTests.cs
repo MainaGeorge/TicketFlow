@@ -5,9 +5,9 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using System.Security.Claims;
 using TicketFlow.Application.Bookings.Commands.CreateBooking;
-using TicketFlow.Application.Bookings.Interfaces;
 using TicketFlow.Application.Bookings.Models;
 using TicketFlow.Application.Bookings.Queries.GetBooking;
+using TicketFlow.Application.Bookings.Queries.GetUserBookings;
 using TicketFlow.Contracts.DTOs;
 using TicketFlow.Domain.Entities;
 using TicketFlow.Presentation.Controllers;
@@ -16,18 +16,16 @@ namespace TicketFlow.Tests.Presentation.Controllers;
 
 public class BookingsControllerTests
 {
-    private readonly Mock<IBookingService> _bookingService;
     private readonly Mock<ILogger<BookingsController>> _logger;
     private readonly BookingsController _controller;
     private readonly Mock<ISender> _sender;
 
     public BookingsControllerTests()
     {
-        _bookingService = new Mock<IBookingService>();
         _logger = new Mock<ILogger<BookingsController>>();
         _sender = new Mock<ISender>();
 
-        _controller = new BookingsController(_sender.Object, _bookingService.Object, _logger.Object);
+        _controller = new BookingsController(_sender.Object, _logger.Object);
         SetAuthenticatedUser("user-123");
     }
 
@@ -131,7 +129,7 @@ public class BookingsControllerTests
 
         Assert.IsType<UnauthorizedObjectResult>(result);
 
-        _bookingService.Verify(x => x.CreateBookingAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        _sender.Verify(x => x.Send(It.IsAny<CreateBookingCommand>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -189,16 +187,29 @@ public class BookingsControllerTests
     }
 
     [Fact]
-    public async Task GetMyBookings_UsesAuthenticatedUserId()
+    public async Task GetMyBookings_WhenUserIsAuthenticated_ReturnsBookings()
     {
-        _bookingService
-            .Setup(x => x.GetBookingsAsync("user-123"))
+        _sender
+            .Setup(x => x.Send(new GetUserBookingsQuery("user-123")))
             .ReturnsAsync([]);
 
-        var result = await _controller.GetMyBookings();
+        var result = await _controller.GetMyBookings(CancellationToken.None);
 
         Assert.IsType<OkObjectResult>(result);
+    }
 
-        _bookingService.Verify(x => x.GetBookingsAsync("user-123"), Times.Once);
+    [Fact]
+    public async Task GetMyBookings_WhenUserIsNotAuthenticated_ReturnsUnauthorised()
+    {
+        _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity()) } };
+
+        _sender
+            .Setup(x => x.Send(new GetUserBookingsQuery("user-123")))
+            .ReturnsAsync([]);
+
+        var result = await _controller.GetMyBookings(CancellationToken.None);
+
+        Assert.IsType<UnauthorizedObjectResult>(result);
+        _sender.Verify(x => x.Send(It.IsAny<GetUserBookingsQuery>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

@@ -1,7 +1,7 @@
-﻿using System.Net;
-using System.Net.Http.Json;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using System.Net;
+using System.Net.Http.Json;
 using TicketFlow.Infrastructure.Persistence;
 
 namespace TicketFlow.Tests.Integration;
@@ -40,6 +40,24 @@ public class BookingsTests
         var eventResponse = await client.PostAsJsonAsync("api/events", new { name = "Test Concert", venue = "Test Arena", eventDate = DateTime.UtcNow.AddDays(30) });
         var eventDto = await eventResponse.Content.ReadFromJsonAsync<EventResponse>();
         var response = await client.PostAsJsonAsync("/api/bookings", new { eventId = eventDto!.Id, seatId = 999999 });
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateBooking_WithSeatFromAnotherEvent_Returns404()
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        using var client = factory.CreateClient();
+        var token = await TestHelpers.RegisterAndLogin(client, "user@test.com");
+        TestHelpers.SetBearerToken(client, token);
+        var eventResponse1 = await client.PostAsJsonAsync("api/events", new { name = "Test Concert", venue = "Test Arena", eventDate = DateTime.UtcNow.AddDays(30) });
+        var eventResponse2 = await client.PostAsJsonAsync("api/events", new { name = "Test Sports Concert", venue = "Test Arena", eventDate = DateTime.UtcNow.AddDays(30) });
+        var eventDto1 = await eventResponse1.Content.ReadFromJsonAsync<EventResponse>();
+        var eventDto2 = await eventResponse2.Content.ReadFromJsonAsync<EventResponse>();
+        var seatResponse = await client.PostAsJsonAsync($"/api/events/{eventDto1!.Id}/seats", new { row = "A", number = 1, price = 50 });
+        seatResponse.EnsureSuccessStatusCode();
+        var seatDto = await seatResponse.Content.ReadFromJsonAsync<SeatResponse>();
+        var response = await client.PostAsJsonAsync("/api/bookings", new { eventId = eventDto2!.Id, seatId = seatDto!.Id });
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 

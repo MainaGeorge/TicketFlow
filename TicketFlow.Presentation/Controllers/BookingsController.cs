@@ -4,9 +4,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TicketFlow.Application.Bookings.Commands.CreateBooking;
-using TicketFlow.Application.Bookings.Interfaces;
 using TicketFlow.Application.Bookings.Models;
 using TicketFlow.Application.Bookings.Queries.GetBooking;
+using TicketFlow.Application.Bookings.Queries.GetUserBookings;
 using TicketFlow.Contracts.DTOs;
 using TicketFlow.Presentation.Mappings;
 
@@ -16,7 +16,7 @@ namespace TicketFlow.Presentation.Controllers;
 [Authorize]
 [ApiVersion("1.0")]
 [ApiController]
-public class BookingsController(ISender sender, IBookingService bookingService, ILogger<BookingsController> logger) : ControllerBase
+public class BookingsController(ISender sender, ILogger<BookingsController> logger) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> CreateBooking([FromBody] CreateBookingRequest bookingRequest, CancellationToken cancellationToken)
@@ -129,7 +129,7 @@ public class BookingsController(ISender sender, IBookingService bookingService, 
     }
 
     [HttpGet("my")]
-    public async Task<IActionResult> GetMyBookings()
+    public async Task<IActionResult> GetMyBookings(CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -145,7 +145,7 @@ public class BookingsController(ISender sender, IBookingService bookingService, 
             });
         }
 
-        var bookings = await bookingService.GetBookingsAsync(userId);
+        var bookings = await sender.Send(new GetUserBookingsQuery(userId), cancellationToken);
         return Ok(bookings.Select(b => b.MapToBookingDto(userId)));
     }
 }
