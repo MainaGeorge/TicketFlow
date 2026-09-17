@@ -4,11 +4,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TicketFlow.Application.Events.Commands.CreateEvent;
-using TicketFlow.Application.Events.Interfaces;
 using TicketFlow.Application.Events.Models;
 using TicketFlow.Application.Events.Queries.GetAllEvents;
 using TicketFlow.Application.Events.Queries.GetEvent;
 using TicketFlow.Application.Seats;
+using TicketFlow.Application.Seats.Commands;
 using TicketFlow.Application.Seats.Interfaces;
 using TicketFlow.Contracts.DTOs;
 using TicketFlow.Presentation.Mappings;
@@ -107,15 +107,8 @@ public class EventsController(ISender sender, ISeatsService seatsService, ILogge
             });
         }
 
-        var newSeat = new Domain.Entities.Seat
-        {
-            Row = request.Row,
-            Number = request.Number!.Value,
-            Price = request.Price!.Value,
-            EventId = eventId
-        };
-
-        var createdSeat = await seatsService.CreateSeatAsync(eventId, newSeat, cancellationToken);
+        var createSeatCommand = new CreateSeatCommand(eventId, request.Row, request.Number!.Value, request.Price!.Value);
+        var createdSeat = await sender.Send(createSeatCommand, cancellationToken);
 
         return createdSeat switch
         {

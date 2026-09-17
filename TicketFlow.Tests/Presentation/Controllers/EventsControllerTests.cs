@@ -5,10 +5,10 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using System.Security.Claims;
 using TicketFlow.Application.Events.Commands.CreateEvent;
-using TicketFlow.Application.Events.Interfaces;
 using TicketFlow.Application.Events.Models;
 using TicketFlow.Application.Events.Queries.GetEvent;
 using TicketFlow.Application.Seats;
+using TicketFlow.Application.Seats.Commands;
 using TicketFlow.Application.Seats.Interfaces;
 using TicketFlow.Contracts.DTOs;
 using TicketFlow.Domain.Entities;
@@ -152,7 +152,7 @@ public class EventsControllerTests
     }
 
     [Fact]
-    public async Task CreateTask_WhenNotAuthenticated_Returns401()
+    public async Task CreateSeat_WhenNotAuthenticated_Returns401()
     {
         _controller.ControllerContext = new ControllerContext {  HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity()) }  };
 
@@ -170,8 +170,7 @@ public class EventsControllerTests
         var seatId = 100;
         var eventId = 4;
 
-        _mockSeatsService
-            .Setup(x => x.CreateSeatAsync(It.IsAny<int>(), It.IsAny<Seat>(), It.IsAny<CancellationToken>()))
+        _sender.Setup(x => x.Send(It.IsAny<CreateSeatCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SeatCreatedResult(new Seat { Id = seatId }));
 
         var request = new CreateSeatRequest { Row = "A", Number = 1, Price = 200 };
@@ -187,8 +186,8 @@ public class EventsControllerTests
     [Fact]
     public async Task CratedSeat_WhenEventNotExists_Returns404()
     {
-        _mockSeatsService
-            .Setup(x => x.CreateSeatAsync(It.IsAny<int>(), It.IsAny<Seat>(), It.IsAny<CancellationToken>()))
+        _sender
+            .Setup(x => x.Send(It.IsAny<CreateSeatCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new EventNotFoundForSeatResult(null));
 
         var request = new CreateSeatRequest { Row = "A", Number = 1, Price = 200 };

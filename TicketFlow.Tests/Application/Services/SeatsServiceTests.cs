@@ -80,7 +80,7 @@ public class SeatsServiceTests
     }
 
     [Fact]
-    public async Task CreateSeat_WhenValid_ReturnsCreatedResult()
+    public async Task Handle_WhenValid_ReturnsCreatedResult()
     {
         var @event = new Event { Id = 1, Name = "Shakira Concert" };
         var seat = new Seat { EventId = @event.Id, Id = 2 };
@@ -91,7 +91,7 @@ public class SeatsServiceTests
 
         _seatsRepository
             .Setup(x => x.CreateSeatAsync(It.IsAny<Seat>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(seat);
+            .ReturnsAsync((Seat s, CancellationToken ct) => s);
 
         var result = await _seatsService.CreateSeatAsync(@event.Id, seat, CancellationToken.None);
 
@@ -103,7 +103,7 @@ public class SeatsServiceTests
     }
 
     [Fact]
-    public async Task CreateSeat_WhenEventNotFound_ReturnsEventNotFoundResult()
+    public async Task Handle_WhenEventNotFound_ReturnsEventNotFoundResult()
     {
 
         _eventsRepository
@@ -116,4 +116,6 @@ public class SeatsServiceTests
 
         _seatsRepository.Verify(x => x.CreateSeatAsync(It.IsAny<Seat>(), It.IsAny<CancellationToken>()), Times.Never());
     }
+
+
 }
