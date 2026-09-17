@@ -9,7 +9,7 @@ using TicketFlow.Application.Events.Queries.GetAllEvents;
 using TicketFlow.Application.Events.Queries.GetEvent;
 using TicketFlow.Application.Seats;
 using TicketFlow.Application.Seats.Commands;
-using TicketFlow.Application.Seats.Interfaces;
+using TicketFlow.Application.Seats.Queries.GetEventSeats;
 using TicketFlow.Application.Seats.Queries.GetSeat;
 using TicketFlow.Contracts.DTOs;
 using TicketFlow.Presentation.Mappings;
@@ -20,7 +20,7 @@ namespace TicketFlow.Presentation.Controllers;
 [ApiController]
 [ApiVersion("1.0")]
 [Authorize]
-public class EventsController(ISender sender, ISeatsService seatsService, ILogger<EventsController> logger) : ControllerBase
+public class EventsController(ISender sender, ILogger<EventsController> logger) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> CreateEvent([FromBody] CreateEventRequest request, CancellationToken cancellationToken)
@@ -54,7 +54,7 @@ public class EventsController(ISender sender, ISeatsService seatsService, ILogge
             }),
             EventCreatedResult eventCreated => CreatedAtAction(
                 nameof(GetEventById), new { id = eventCreated.Event!.Id },
-                new EventResult(eventCreated.Event).MapToEventDto()),
+                eventCreated.Event.MapToEventDto()),
             _ => throw new InvalidOperationException("Unknown booking result.")
         };
     }
@@ -76,7 +76,7 @@ public class EventsController(ISender sender, ISeatsService seatsService, ILogge
                 Detail = "The specified event could not be found.",
                 Instance = HttpContext.Request.Path
             }),
-            EventResult eventResult => Ok(eventResult.MapToEventDto()),
+            EventResult eventResult => Ok(eventResult.Event.MapToEventDto()),
             _ => throw new InvalidOperationException("Unknown booking result.")
         };
     }
@@ -87,7 +87,7 @@ public class EventsController(ISender sender, ISeatsService seatsService, ILogge
     {
         var query = new GetAllEventsQuery();
         var events = await sender.Send(query, cancellationToken);
-        return Ok(events.Select(e => e.MapToEventDto()));
+        return Ok(events.Select(e => e.Event.MapToEventDto()));
     }
 
     [HttpPost("{eventId:int}/seats")]
@@ -149,7 +149,8 @@ public class EventsController(ISender sender, ISeatsService seatsService, ILogge
     [HttpGet("{eventId:int}/seats")]
     public async Task<IActionResult> GetSeats(int eventId, CancellationToken cancellationToken)
     {
-        var seats = await seatsService.GetSeatsAsync(eventId, cancellationToken);
+        var query = new GetEventSeatsQuery(eventId);
+        var seats = await sender.Send(query, cancellationToken);
 
         return Ok(seats.Select(s => s.Seat.MapToSeatDto()));
     }

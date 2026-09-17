@@ -9,7 +9,7 @@ using TicketFlow.Application.Events.Models;
 using TicketFlow.Application.Events.Queries.GetEvent;
 using TicketFlow.Application.Seats;
 using TicketFlow.Application.Seats.Commands;
-using TicketFlow.Application.Seats.Interfaces;
+using TicketFlow.Application.Seats.Queries.GetEventSeats;
 using TicketFlow.Application.Seats.Queries.GetSeat;
 using TicketFlow.Contracts.DTOs;
 using TicketFlow.Domain.Entities;
@@ -19,7 +19,6 @@ namespace TicketFlow.Tests.Presentation.Controllers;
 
 public class EventsControllerTests
 {
-    private readonly Mock<ISeatsService> _mockSeatsService;
     private readonly Mock<ILogger<EventsController>> _logger;
     private readonly Mock<ISender> _sender;
     private readonly EventsController _controller;
@@ -37,11 +36,10 @@ public class EventsControllerTests
 
     public EventsControllerTests()
     {
-        _mockSeatsService = new Mock<ISeatsService>();
         _logger = new Mock<ILogger<EventsController>>();
         _sender = new Mock<ISender>();
 
-        _controller = new EventsController(_sender.Object, _mockSeatsService.Object, _logger.Object);
+        _controller = new EventsController(_sender.Object, _logger.Object);
 
         SetAuthorisation(userId);
     }
@@ -89,16 +87,23 @@ public class EventsControllerTests
     [Fact]
     public async Task CreatedEvent_WhenEventIsInPast_Returns400()
     {
-        _sender
-             .Setup(x => x.Send(It.IsAny<CreateEventCommand>(), It.IsAny<CancellationToken>()))
-             .ReturnsAsync(new PastEventResult(null));
-
         var request = new CreateEventRequest
         {
             Name = "Test Event",
             Venue = "Arena",
             EventDate = DateTime.UtcNow.AddDays(-3)
         };
+
+        var @event = new Event
+        {
+            Name = "Test Event",
+            Venue = "Arena",
+            EventDate = DateTime.UtcNow.AddDays(-3)
+        };
+
+        _sender
+             .Setup(x => x.Send(It.IsAny<CreateEventCommand>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync(new PastEventResult(@event));
 
         var result = await _controller.CreateEvent(request, CancellationToken.None);
 
@@ -162,7 +167,7 @@ public class EventsControllerTests
         var result = await _controller.CreateSeat(1, request, CancellationToken.None);
 
         Assert.IsType<UnauthorizedObjectResult>(result);
-        _mockSeatsService.Verify(x => x.CreateSeatAsync(It.IsAny<int>(), It.IsAny<Seat>(), It.IsAny<CancellationToken>()), Times.Never());
+        _sender.Verify(x => x.Send(It.IsAny<CreateSeatCommand>(), It.IsAny<CancellationToken>()), Times.Never());
     }
 
     [Fact]
@@ -204,8 +209,8 @@ public class EventsControllerTests
     [Fact]
     public async Task GetSeats_AlwaysReturns200()
     {
-        _mockSeatsService
-            .Setup(x => x.GetSeatsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+        _sender
+            .Setup(x => x.Send(It.IsAny<GetEventSeatsQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         var result = await _controller.GetSeats(4, CancellationToken.None);
