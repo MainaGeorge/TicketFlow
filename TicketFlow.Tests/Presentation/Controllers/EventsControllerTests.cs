@@ -10,6 +10,7 @@ using TicketFlow.Application.Events.Queries.GetEvent;
 using TicketFlow.Application.Seats;
 using TicketFlow.Application.Seats.Commands;
 using TicketFlow.Application.Seats.Interfaces;
+using TicketFlow.Application.Seats.Queries.GetSeat;
 using TicketFlow.Contracts.DTOs;
 using TicketFlow.Domain.Entities;
 using TicketFlow.Presentation.Controllers;
@@ -188,7 +189,7 @@ public class EventsControllerTests
     {
         _sender
             .Setup(x => x.Send(It.IsAny<CreateSeatCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new EventNotFoundForSeatResult(null));
+            .ReturnsAsync(new EventNotFoundForSeatResult());
 
         var request = new CreateSeatRequest { Row = "A", Number = 1, Price = 200 };
 
@@ -216,9 +217,9 @@ public class EventsControllerTests
     [Fact]
     public async Task GetSeat_WhenSeatNotFound_Returns404()
     {
-        _mockSeatsService
-            .Setup(x => x.GetSeatAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SeatNotFound(null));
+        _sender
+            .Setup(x => x.Send(It.IsAny<GetSeatQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SeatNotFound());
 
         var result = await _controller.GetSeat(1, 4, CancellationToken.None);
 
@@ -234,8 +235,8 @@ public class EventsControllerTests
     {
         var seatId = 4;
 
-        _mockSeatsService
-            .Setup(x => x.GetSeatAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+        _sender
+            .Setup(x => x.Send(It.IsAny<GetSeatQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SeatResult(new Seat { Id = seatId }));
 
         var result = await _controller.GetSeat(1, 4, CancellationToken.None);

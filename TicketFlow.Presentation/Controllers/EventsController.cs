@@ -10,6 +10,7 @@ using TicketFlow.Application.Events.Queries.GetEvent;
 using TicketFlow.Application.Seats;
 using TicketFlow.Application.Seats.Commands;
 using TicketFlow.Application.Seats.Interfaces;
+using TicketFlow.Application.Seats.Queries.GetSeat;
 using TicketFlow.Contracts.DTOs;
 using TicketFlow.Presentation.Mappings;
 
@@ -112,7 +113,7 @@ public class EventsController(ISender sender, ISeatsService seatsService, ILogge
 
         return createdSeat switch
         {
-            SeatCreatedResult result => CreatedAtAction(nameof(GetSeat), new { eventId = eventId, seatId = result.Seat!.Id }, result.MapToSeatDto()),
+            SeatCreatedResult result => CreatedAtAction(nameof(GetSeat), new { eventId = eventId, seatId = result.Seat!.Id }, result.Seat.MapToSeatDto()),
             EventNotFoundForSeatResult => NotFound(new ProblemDetails
             {
                 Status = StatusCodes.Status404NotFound,
@@ -127,7 +128,8 @@ public class EventsController(ISender sender, ISeatsService seatsService, ILogge
     [HttpGet("{eventId:int}/seats/{seatId:int}")]
     public async Task<IActionResult> GetSeat(int eventId, int seatId, CancellationToken cancellationToken)
     {
-        var seat = await seatsService.GetSeatAsync(eventId, seatId, cancellationToken);
+        var query = new GetSeatQuery(eventId, seatId);
+        var seat = await sender.Send(query, cancellationToken);
 
         return seat switch
         {
@@ -139,7 +141,7 @@ public class EventsController(ISender sender, ISeatsService seatsService, ILogge
                 Detail = "The specified seat could not be found.",
                 Instance = HttpContext.Request.Path
             }),
-            SeatResult result => Ok(result.MapToSeatDto()),
+            SeatResult result => Ok(result.Seat.MapToSeatDto()),
             _ => throw new InvalidOperationException("Unknown seat result.")
         };
     }
@@ -149,6 +151,6 @@ public class EventsController(ISender sender, ISeatsService seatsService, ILogge
     {
         var seats = await seatsService.GetSeatsAsync(eventId, cancellationToken);
 
-        return Ok(seats.Select(s => s.MapToSeatDto()));
+        return Ok(seats.Select(s => s.Seat.MapToSeatDto()));
     }
 }

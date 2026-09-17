@@ -36,17 +36,17 @@ public static class EntityMappings
         };
     }
 
-    public static SeatDto MapToSeatDto(this SeatBaseResult result)
+    public static SeatDto MapToSeatDto(this Seat result)
     {
         return new SeatDto
         {
-            BookingId = result.Seat!.Booking?.Id,
-            EventId = result.Seat.EventId,
-            Id = result.Seat.Id,
-            IsBooked = result.Seat.Booking != null,
-            Number = result.Seat.Number,
-            Price = result.Seat.Price,
-            Row = result.Seat.Row
+            BookingId = result.Booking?.Id,
+            EventId = result.EventId,
+            Id = result.Id,
+            IsBooked = result.Booking != null,
+            Number = result.Number,
+            Price = result.Price,
+            Row = result.Row
         };
     }
 

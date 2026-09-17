@@ -36,7 +36,7 @@ public class SeatsService(ILogger<SeatsService> logger, ISeatsRepository seatsRe
         return new SeatResult(seat);
     }
 
-    public async Task<IEnumerable<SeatBaseResult>> GetSeatsAsync(int eventId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<SeatResult>> GetSeatsAsync(int eventId, CancellationToken cancellationToken = default)
     {
         var seats = await seatsRepository.GetSeatsAsync(eventId, cancellationToken);
 

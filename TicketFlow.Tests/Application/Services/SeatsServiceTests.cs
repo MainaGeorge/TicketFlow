@@ -117,5 +117,4 @@ public class SeatsServiceTests
         _seatsRepository.Verify(x => x.CreateSeatAsync(It.IsAny<Seat>(), It.IsAny<CancellationToken>()), Times.Never());
     }
 
-
 }
