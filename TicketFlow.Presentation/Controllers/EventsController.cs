@@ -3,9 +3,10 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using TicketFlow.Application.Events.Commands;
+using TicketFlow.Application.Events.Commands.CreateEvent;
 using TicketFlow.Application.Events.Interfaces;
 using TicketFlow.Application.Events.Models;
+using TicketFlow.Application.Events.Queries.GetAllEvents;
 using TicketFlow.Application.Seats;
 using TicketFlow.Application.Seats.Interfaces;
 using TicketFlow.Contracts.DTOs;
@@ -81,7 +82,8 @@ public class EventsController(ISender sender, IEventsService eventService, ISeat
     [AllowAnonymous]
     public async Task<IActionResult> GetAllEvents(CancellationToken cancellationToken)
     {
-        var events = await eventService.GetAllEventsAsync(cancellationToken);
+        var query = new GetAllEventsQuery();
+        var events = await sender.Send(query, cancellationToken);
         return Ok(events.Select(e => e.MapToEventDto()));
     }
 

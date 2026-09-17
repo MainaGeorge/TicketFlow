@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
 using System.Security.Claims;
-using TicketFlow.Application.Events.Commands;
+using TicketFlow.Application.Events.Commands.CreateEvent;
 using TicketFlow.Application.Events.Interfaces;
 using TicketFlow.Application.Events.Models;
 using TicketFlow.Application.Seats;
@@ -141,9 +141,9 @@ public class EventsControllerTests
     [Fact]
     public async Task GetAllEvents_AlwaysReturns200()
     {
-        _mockEventsService
-            .Setup(x => x.GetAllEventsAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
+        _sender
+            .Setup(x => x.Send(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Enumerable.Empty<CreateBookingRequest>);
 
         var result = await _controller.GetAllEvents(CancellationToken.None);
 

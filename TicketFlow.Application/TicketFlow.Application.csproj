@@ -16,8 +16,4 @@
     <ProjectReference Include="..\TicketFlow.Domain\TicketFlow.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Events\Queries\" />
-  </ItemGroup>
-
 </Project>

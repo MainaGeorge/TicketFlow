@@ -4,7 +4,7 @@ using TicketFlow.Application.Events.Interfaces;
 using TicketFlow.Application.Events.Models;
 using TicketFlow.Domain.Entities;
 
-namespace TicketFlow.Application.Events.Commands;
+namespace TicketFlow.Application.Events.Commands.CreateEvent;
 
 public class CreateEventCommandHandler(
     IEventsRepository eventRepository,
