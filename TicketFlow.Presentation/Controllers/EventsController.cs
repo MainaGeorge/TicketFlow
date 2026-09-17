@@ -7,6 +7,7 @@ using TicketFlow.Application.Events.Commands.CreateEvent;
 using TicketFlow.Application.Events.Interfaces;
 using TicketFlow.Application.Events.Models;
 using TicketFlow.Application.Events.Queries.GetAllEvents;
+using TicketFlow.Application.Events.Queries.GetEvent;
 using TicketFlow.Application.Seats;
 using TicketFlow.Application.Seats.Interfaces;
 using TicketFlow.Contracts.DTOs;
@@ -18,7 +19,7 @@ namespace TicketFlow.Presentation.Controllers;
 [ApiController]
 [ApiVersion("1.0")]
 [Authorize]
-public class EventsController(ISender sender, IEventsService eventService, ISeatsService seatsService, ILogger<EventsController> logger) : ControllerBase
+public class EventsController(ISender sender, ISeatsService seatsService, ILogger<EventsController> logger) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> CreateEvent([FromBody] CreateEventRequest request, CancellationToken cancellationToken)
@@ -61,7 +62,8 @@ public class EventsController(ISender sender, IEventsService eventService, ISeat
     [AllowAnonymous]
     public async Task<IActionResult> GetEventById(int id, CancellationToken cancellationToken)
     {
-        var @event = await eventService.GetEventAsync(id, cancellationToken);
+        var eventQuery = new GetEventQuery(id);
+        var @event = await sender.Send(eventQuery, cancellationToken);
 
         return @event switch
         {
