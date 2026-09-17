@@ -23,7 +23,7 @@ public static class EntityMappings
         };
     }
 
-    public static EventDto MapToEventDto(this EventBaseResult result)
+    public static EventDto MapToEventDto(this EventResult result)
     {
         return new EventDto
         {

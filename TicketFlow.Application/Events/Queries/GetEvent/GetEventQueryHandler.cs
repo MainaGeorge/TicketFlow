@@ -17,7 +17,7 @@ public class GetEventQueryHandler(
         if (@event is null)
         {
             logger.LogWarning("Event not found. EventId: {EventId}", query.Id);
-            return new EventNotFoundResult(null);
+            return new EventNotFoundResult();
         }
 
         return new EventResult(@event);

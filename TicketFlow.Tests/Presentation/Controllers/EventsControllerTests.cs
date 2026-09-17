@@ -113,7 +113,7 @@ public class EventsControllerTests
     {
         _sender
             .Setup(x => x.Send(It.IsAny<GetEventQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new EventNotFoundResult(null));
+            .ReturnsAsync(new EventNotFoundResult());
 
         var result = await _controller.GetEventById(10, CancellationToken.None);
 

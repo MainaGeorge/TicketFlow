@@ -53,7 +53,7 @@ public class EventsController(ISender sender, ISeatsService seatsService, ILogge
             }),
             EventCreatedResult eventCreated => CreatedAtAction(
                 nameof(GetEventById), new { id = eventCreated.Event!.Id },
-                eventCreated.MapToEventDto()),
+                new EventResult(eventCreated.Event).MapToEventDto()),
             _ => throw new InvalidOperationException("Unknown booking result.")
         };
     }
