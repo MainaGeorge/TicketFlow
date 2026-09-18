@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using TicketFlow.Application.Authentication.Interfaces;
 using TicketFlow.Application.Authentication.Models;
 
-namespace TicketFlow.Application.Authentication.Commands;
+namespace TicketFlow.Application.Authentication.Commands.Register;
 
 public class RegisterCommandHandler(IIdentityService identityService, ILogger<RegisterCommandHandler> logger) : IRequestHandler<RegisterCommand, RegisterResult>
 {

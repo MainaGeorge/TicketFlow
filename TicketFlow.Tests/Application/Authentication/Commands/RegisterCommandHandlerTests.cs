@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
-using TicketFlow.Application.Authentication.Commands;
+using TicketFlow.Application.Authentication.Commands.Register;
 using TicketFlow.Application.Authentication.Interfaces;
 using TicketFlow.Application.Authentication.Models;
 using TicketFlow.Domain.Entities;
