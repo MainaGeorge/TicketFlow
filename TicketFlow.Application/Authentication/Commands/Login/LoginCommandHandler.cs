@@ -39,7 +39,7 @@ public class LoginCommandHandler(
 
         var tokens = await tokenService.GenerateTokensAsync(user, cancellationToken);
 
-        var refreshToken = new RefreshToken
+        var refreshToken = new TicketFlow.Domain.Entities.RefreshToken
         {
             Token = tokens.RefreshToken,
             UserId = user.Id,
