@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using TicketFlow.Application.Authentication.Interfaces;
 using TicketFlow.Application.Authentication.Services;
 using TicketFlow.Application.Common.Behaviours;
+using FluentValidation;
 
 namespace TicketFlow.Application;
 
@@ -15,7 +16,10 @@ public static class DependencyInjection
         {
             cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly);
             cfg.AddOpenBehavior(typeof(LoggingBehaviour<,>));
+            cfg.AddOpenBehavior(typeof(ValidationBehaviour<,>));
         });
+
+       services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
 
         return services;
     }
