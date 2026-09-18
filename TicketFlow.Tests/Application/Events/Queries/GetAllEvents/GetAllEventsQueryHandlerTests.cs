@@ -4,7 +4,7 @@ using TicketFlow.Application.Events.Models;
 using TicketFlow.Application.Events.Queries.GetAllEvents;
 using TicketFlow.Domain.Entities;
 
-namespace TicketFlow.Tests.Application.Events.Queries;
+namespace TicketFlow.Tests.Application.Events.Queries.GetEvents;
 
 public class GetAllEventsQueryHandlerTests
 {
