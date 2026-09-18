@@ -1,9 +1,11 @@
-﻿using System.Net;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using System.Net;
 using System.Net.Http.Json;
 
 namespace TicketFlow.Tests.Integration;
 
-public class SeatsTests
+public class SeatEndpointsTests
 {
     private static async Task<int> CreateEvent(
         HttpClient client)
@@ -75,6 +77,24 @@ public class SeatsTests
         TestHelpers.SetBearerToken(client, token);
         var response = await client.PostAsJsonAsync("/api/events/999999/seats", new { row = "A", number = 1, price = 50 });
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task WhenPriceIsInvalid_ReturnsBadRequestWithValidationErrors()
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        using var client = factory.CreateClient();
+        var eventId = await CreateEvent(client);
+        var response = await client.PostAsJsonAsync($"/api/events/{eventId}/seats", new { row = "A", number = 1, price = 0m });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var problemDetails = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
+
+        Assert.NotNull(problemDetails);
+        Assert.Equal(StatusCodes.Status400BadRequest, problemDetails.Status);
+        Assert.True(problemDetails.Errors.ContainsKey("Price"));
+        Assert.NotEmpty(problemDetails.Errors["Price"]);
     }
 
     private sealed class EventResponse

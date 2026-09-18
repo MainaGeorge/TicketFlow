@@ -8,7 +8,7 @@ public class CreateSeatCommandValidator :  AbstractValidator<CreateSeatCommand>
     {
         RuleFor(f => f.Price).GreaterThan(0);
         RuleFor(f => f.Number).GreaterThan(0);
-        RuleFor(f => f.Row).NotEmpty();
+        RuleFor(f => f.Row).NotEmpty().MaximumLength(10);
         RuleFor(f => f.EventId).GreaterThan(0);
     }
 }

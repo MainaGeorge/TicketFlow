@@ -6,7 +6,7 @@ using TicketFlow.Infrastructure.Persistence;
 
 namespace TicketFlow.Tests.Integration;
 
-public class BookingsTests
+public class BookingEndpointTests
 {
     [Fact]
     public async Task CreateBooking_WithValidRequest_Returns201()

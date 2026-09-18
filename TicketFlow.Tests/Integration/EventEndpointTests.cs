@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 
 namespace TicketFlow.Tests.Integration;
 
-public class EventsTests
+public class EventEndpointTests
 {
     [Fact]
     public async Task CreateEvent_WithValidRequest_Returns201()

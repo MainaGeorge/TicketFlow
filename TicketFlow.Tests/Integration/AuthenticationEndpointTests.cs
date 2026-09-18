@@ -7,7 +7,7 @@ using TicketFlow.Infrastructure.Persistence;
 
 namespace TicketFlow.Tests.Integration;
 
-public class AuthTests
+public class AuthenticationEndpointTests
 {
     [Fact]
     public async Task Register_WithValidRequest_Returns201()

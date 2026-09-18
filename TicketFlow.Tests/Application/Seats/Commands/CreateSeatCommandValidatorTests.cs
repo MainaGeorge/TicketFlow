@@ -68,6 +68,16 @@ public class CreateSeatCommandValidatorTests
     }
 
     [Fact]
+    public async Task Validate_WhenRowHasMoreThan10Characters_HasValidationError()
+    {
+        var validator = new CreateSeatCommandValidator();
+        var command = new CreateSeatCommand(1, new string('r', 11), 3, 0.01m);
+
+        var results = await validator.TestValidateAsync(command);
+        results.ShouldHaveValidationErrorFor(x => x.Row);
+    }
+
+    [Fact]
     public async Task Validate_WhenAllIsValid_HasNoValidationError()
     {
         var validator = new CreateSeatCommandValidator();
