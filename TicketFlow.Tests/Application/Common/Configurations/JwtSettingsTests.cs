@@ -6,7 +6,7 @@ using TicketFlow.Application.Common.DependencyInjection;
 using TicketFlow.Application.Common.Validators;
 
 
-namespace TicketFlow.Tests.Application.Configurations;
+namespace TicketFlow.Tests.Application.Common.Configurations;
 
 public class JwtSettingsTests
 {
