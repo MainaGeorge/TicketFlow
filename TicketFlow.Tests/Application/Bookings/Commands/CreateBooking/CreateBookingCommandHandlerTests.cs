@@ -1,5 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using MediatR;
+using Microsoft.Extensions.Logging;
 using Moq;
+using TicketFlow.Application.ApplicationEvents.BookingCreated;
 using TicketFlow.Application.Background;
 using TicketFlow.Application.Bookings.Commands.CreateBooking;
 using TicketFlow.Application.Bookings.Interfaces;
@@ -12,7 +14,7 @@ namespace TicketFlow.Tests.Application.Bookings.Commands.CreateBooking;
 public class CreateBookingCommandHandlerTests
 {
     private readonly Mock<ILogger<CreateBookingCommandHandler>> _logger;
-    private readonly Mock<IBackgroundTaskQueue> _backgroundTaskQueue;
+    private readonly Mock<IPublisher> _publisher;
     private readonly Mock<IBookingRepository> _bookingRepository;
     private readonly Mock<IEventsRepository> _eventRepository;
     private readonly CreateBookingCommandHandler _commandHandler;
@@ -20,11 +22,11 @@ public class CreateBookingCommandHandlerTests
     public CreateBookingCommandHandlerTests()
     {
         _logger = new Mock<ILogger<CreateBookingCommandHandler>>();
-        _backgroundTaskQueue = new Mock<IBackgroundTaskQueue>();
+        _publisher = new Mock<IPublisher>();
         _bookingRepository = new Mock<IBookingRepository>();
         _eventRepository = new Mock<IEventsRepository>();
 
-        _commandHandler = new CreateBookingCommandHandler(_bookingRepository.Object, _eventRepository.Object, _backgroundTaskQueue.Object, _logger.Object);
+        _commandHandler = new CreateBookingCommandHandler(_bookingRepository.Object, _eventRepository.Object, _publisher.Object, _logger.Object);
     }
 
 
@@ -62,9 +64,9 @@ public class CreateBookingCommandHandlerTests
             .Setup(x => x.GetSeatForBookingAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(seat);
 
-        _backgroundTaskQueue
-            .Setup(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()))
-            .Returns(ValueTask.CompletedTask);
+        _publisher
+            .Setup(x => x.Publish(It.IsAny<BookingCreatedEvent>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         var result = await _commandHandler.Handle(command, CancellationToken.None);
 
@@ -72,7 +74,7 @@ public class CreateBookingCommandHandlerTests
         _bookingRepository.Verify(x => x.GetSeatForBookingAsync(eventId, seatId, CancellationToken.None), Times.Once);
         _bookingRepository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == userId && b.SeatId == seatId), It.IsAny<CancellationToken>()), Times.Once);
         _bookingRepository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
-        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), CancellationToken.None), Times.Once);
+        _publisher.Verify(x => x.Publish(It.Is<BookingCreatedEvent>(e => e.BookingId == createdBooking!.Id && e.UserId == createdBooking.UserId), CancellationToken.None), Times.Once);
 
         Assert.IsType<BookingCreated>(result);
         Assert.NotNull(createdBooking);
@@ -114,9 +116,9 @@ public class CreateBookingCommandHandlerTests
             .Setup(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        _backgroundTaskQueue
-            .Setup(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()))
-            .Returns(ValueTask.CompletedTask);
+        _publisher
+            .Setup(x => x.Publish(It.IsAny<BookingCreatedEvent>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         await _commandHandler.Handle(command, cancellationToken);
 
@@ -128,7 +130,7 @@ public class CreateBookingCommandHandlerTests
 
         _bookingRepository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), cancellationToken), Times.Once);
 
-        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), cancellationToken), Times.Once);
+        _publisher.Verify(x => x.Publish(It.IsAny<BookingCreatedEvent>(), cancellationToken), Times.Once);
     }
 
     [Fact]
@@ -158,7 +160,7 @@ public class CreateBookingCommandHandlerTests
         var result = await Assert.ThrowsAsync<InvalidOperationException>(
             () => _commandHandler.Handle(bookingCommand, CancellationToken.None));
 
-        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()), Times.Never);
+        _publisher.Verify(x => x.Publish(It.IsAny<BookingCreatedEvent>(), It.IsAny<CancellationToken>()), Times.Never);
         _bookingRepository.Verify(x => x.SaveChangesAsync(seatId, CancellationToken.None), Times.Never);
         _bookingRepository.Verify(x => x.GetSeatForBookingAsync(eventId, seatId, CancellationToken.None), Times.Once);
         _eventRepository.Verify(x => x.GetEventAsync(eventId, CancellationToken.None), Times.Once);
@@ -186,7 +188,7 @@ public class CreateBookingCommandHandlerTests
         _eventRepository.Verify(x => x.GetEventAsync(eventId, CancellationToken.None), Times.Once);
         _bookingRepository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == userId && b.SeatId == seatId), It.IsAny<CancellationToken>()), Times.Never);
         _bookingRepository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
-        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()), Times.Never);
+        _publisher.Verify(x => x.Publish(It.IsAny<BookingCreatedEvent>(), It.IsAny<CancellationToken>()), Times.Never);
 
         Assert.IsType<BookingSeatNotFound>(result);
     }
@@ -213,7 +215,7 @@ public class CreateBookingCommandHandlerTests
         _eventRepository.Verify(x => x.GetEventAsync(eventId, CancellationToken.None), Times.Once);
         _bookingRepository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == userId && b.SeatId == seat.Id), It.IsAny<CancellationToken>()), Times.Never);
         _bookingRepository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
-        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()), Times.Never);
+        _publisher.Verify(x => x.Publish(It.IsAny<BookingCreatedEvent>(), It.IsAny<CancellationToken>()), Times.Never);
 
         Assert.IsType<BookingSeatAlreadyBooked>(result);
     }
@@ -240,7 +242,7 @@ public class CreateBookingCommandHandlerTests
         _bookingRepository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == userId && b.SeatId == seat.Id), It.IsAny<CancellationToken>()), Times.Never);
         _eventRepository.Verify(x => x.GetEventAsync(eventId, CancellationToken.None), Times.Once);
         _bookingRepository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
-        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()), Times.Never);
+        _publisher.Verify(x => x.Publish(It.IsAny<BookingCreatedEvent>(), It.IsAny<CancellationToken>()), Times.Never);
 
         Assert.IsType<BookingEventUnavailable>(result);
     }
@@ -274,9 +276,9 @@ public class CreateBookingCommandHandlerTests
             .Setup(x => x.GetSeatForBookingAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(seat);
 
-        _backgroundTaskQueue
-            .Setup(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()))
-            .Returns(ValueTask.CompletedTask);
+        _publisher
+            .Setup(x => x.Publish(It.IsAny<BookingCreatedEvent>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         var result = await Assert.ThrowsAsync<InvalidOperationException>(() => _commandHandler.Handle(new CreateBookingCommand(1, seatId, userId), CancellationToken.None));
         Assert.Equal(message, result.Message);
@@ -284,7 +286,7 @@ public class CreateBookingCommandHandlerTests
         _eventRepository.Verify(x => x.GetEventAsync(eventId, CancellationToken.None), Times.Once);
         _bookingRepository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == userId && b.SeatId == seatId), It.IsAny<CancellationToken>()), Times.Once);
         _bookingRepository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
-        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), CancellationToken.None), Times.Never);
+        _publisher.Verify(x => x.Publish(It.IsAny<BookingCreatedEvent>(), CancellationToken.None), Times.Never);
     }
 
     [Fact]
@@ -304,7 +306,7 @@ public class CreateBookingCommandHandlerTests
         _eventRepository.Verify(x => x.GetEventAsync(eventId, CancellationToken.None), Times.Once);
         _bookingRepository.Verify(x => x.AddAsync(It.IsAny<Booking>(), It.IsAny<CancellationToken>()), Times.Never);
         _bookingRepository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
-        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), CancellationToken.None), Times.Never);
+        _publisher.Verify(x => x.Publish(It.IsAny<BookingCreatedEvent>(), CancellationToken.None), Times.Never);
 
     }
 
@@ -334,7 +336,7 @@ public class CreateBookingCommandHandlerTests
         _eventRepository.Verify(x => x.GetEventAsync(eventId, CancellationToken.None), Times.Once);
         _bookingRepository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == userId), It.IsAny<CancellationToken>()), Times.Never);
         _bookingRepository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
-        _backgroundTaskQueue.Verify(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()), Times.Never);
+        _publisher.Verify(x => x.Publish(It.IsAny<BookingCreatedEvent>(), It.IsAny<CancellationToken>()), Times.Never);
 
         Assert.IsType<BookingSeatNotFound>(result);
     }

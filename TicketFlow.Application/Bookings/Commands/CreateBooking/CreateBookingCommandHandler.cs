@@ -1,8 +1,6 @@
 ﻿using MediatR;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System.Text.Json;
-using TicketFlow.Application.Background;
+using TicketFlow.Application.ApplicationEvents.BookingCreated;
 using TicketFlow.Application.Bookings.Exceptions;
 using TicketFlow.Application.Bookings.Interfaces;
 using TicketFlow.Application.Bookings.Models;
@@ -14,7 +12,7 @@ namespace TicketFlow.Application.Bookings.Commands.CreateBooking;
 public sealed class CreateBookingCommandHandler(
     IBookingRepository bookingRepository,
     IEventsRepository eventsRepository,
-    IBackgroundTaskQueue backgroundTaskQueue,
+    IPublisher publisher,
     ILogger<CreateBookingCommandHandler> logger) : IRequestHandler<CreateBookingCommand, BookingBaseResult>
 {
     public async Task<BookingBaseResult> Handle(CreateBookingCommand command, CancellationToken cancellationToken)
@@ -55,20 +53,7 @@ public sealed class CreateBookingCommandHandler(
         {
             await bookingRepository.SaveChangesAsync(command.SeatId, cancellationToken);
 
-            var confirmationWork = new BookingConfirmationWork(booking.Id, booking.UserId);
-
-            var payload = JsonSerializer.Serialize(confirmationWork);
-
-            await backgroundTaskQueue.QueueAsync(
-                new BackgroundWorkItem(
-                    JobType: nameof(BookingConfirmationWork),
-                    Payload: payload,
-                    ExecuteAsync: async (serviceProvider, ct) =>
-                    {
-                        var processor = serviceProvider.GetRequiredService<IBookingConfirmationProcessor>();
-                        await processor.ProcessAsync(confirmationWork, ct);
-                    }),
-                cancellationToken);
+            await publisher.Publish(new BookingCreatedEvent(booking.Id, command.UserId), cancellationToken);
 
             return new BookingCreated(booking.Id, booking.SeatId, booking.UserId, booking.CreatedAt);
         }
