@@ -1,7 +1,13 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using System.Security.Claims;
+using TicketFlow.Application.Authentication.Commands.DeactivateUser;
+using TicketFlow.Application.Authentication.Commands.Login;
+using TicketFlow.Application.Authentication.Commands.ReactivateUser;
+using TicketFlow.Application.Authentication.Commands.RefreshToken;
+using TicketFlow.Application.Authentication.Commands.Register;
 using TicketFlow.Application.Authentication.Interfaces;
 using TicketFlow.Application.Authentication.Models;
 using TicketFlow.Contracts.DTOs;
@@ -11,13 +17,13 @@ namespace TicketFlow.Tests.Presentation.Controllers;
 
 public class AuthenticationControllerTests
 {
-    private readonly Mock<IAuthenticationService> _authService;
+    private readonly Mock<ISender> _sender;
     private readonly AuthenticationController _controller;
 
     public AuthenticationControllerTests()
     {
-        _authService = new Mock<IAuthenticationService>();
-        _controller = new AuthenticationController(_authService.Object);
+        _sender = new Mock<ISender>();
+        _controller = new AuthenticationController(_sender.Object);
     }
 
     [Fact]
@@ -36,8 +42,8 @@ public class AuthenticationControllerTests
             TokenType = "Bearer"
         };
 
-        _authService
-            .Setup(x => x.RefreshTokenAsync(request, CancellationToken.None))
+        _sender
+            .Setup(x => x.Send(It.IsAny<RefreshTokenCommand>(), CancellationToken.None))
             .ReturnsAsync(new RefreshTokenSucceeded(tokenResponse));
 
         var result = await _controller.Refresh(request, CancellationToken.None);
@@ -49,7 +55,7 @@ public class AuthenticationControllerTests
         Assert.Equal(tokenResponse.ExpiresAt, response.Tokens.ExpiresAt);
         Assert.Equal(tokenResponse.TokenType, response.Tokens.TokenType);
 
-        _authService.Verify(x => x.RefreshTokenAsync(request, CancellationToken.None), Times.Once);
+        _sender.Verify(x => x.Send(It.Is<RefreshTokenCommand>(t => t.Token == request.RefreshToken), CancellationToken.None), Times.Once);
     }
 
     [Fact]
@@ -60,8 +66,8 @@ public class AuthenticationControllerTests
             RefreshToken = "invalid-refresh-token"
         };
 
-        _authService
-            .Setup(x => x.RefreshTokenAsync(request, CancellationToken.None))
+        _sender
+            .Setup(x => x.Send(It.IsAny<RefreshTokenCommand>(), CancellationToken.None))
             .ReturnsAsync(new RefreshTokenInvalid());
 
         _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity()) } };
@@ -75,7 +81,7 @@ public class AuthenticationControllerTests
         Assert.Equal("Invalid refresh token.", problemDetails.Title);
         Assert.Equal("The refresh token is invalid or expired.", problemDetails.Detail);
 
-        _authService.Verify(x => x.RefreshTokenAsync(request, CancellationToken.None), Times.Once);
+        _sender.Verify(x => x.Send(It.Is<RefreshTokenCommand>(t => t.Token == request.RefreshToken), CancellationToken.None), Times.Once);
     }
 
     [Fact]
@@ -91,13 +97,13 @@ public class AuthenticationControllerTests
 
         _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity()) } };
 
-        _authService
-            .Setup(x => x.RefreshTokenAsync(request, cancellationToken))
+        _sender
+            .Setup(x => x.Send(It.IsAny<RefreshTokenCommand>(), cancellationToken))
             .ReturnsAsync(new RefreshTokenInvalid());
 
         await _controller.Refresh(request, cancellationToken);
 
-        _authService.Verify(x => x.RefreshTokenAsync(request, cancellationToken), Times.Once);
+        _sender.Verify(x => x.Send(It.Is<RefreshTokenCommand>(t => t.Token == request.RefreshToken), cancellationToken), Times.Once);
     }
 
     [Fact]
@@ -109,8 +115,8 @@ public class AuthenticationControllerTests
             Password = "Password123!"
         };
 
-        _authService
-            .Setup(x => x.RegisterAsync(request, It.IsAny<CancellationToken>()))
+        _sender
+            .Setup(x => x.Send(It.IsAny<RegisterCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new RegistrationSucceeded(new Domain.Entities.User { Email = request.Email }));
 
         var result = await _controller.Register(request, CancellationToken.None);
@@ -121,7 +127,7 @@ public class AuthenticationControllerTests
         Assert.Equal(StatusCodes.Status201Created, createdResponse.StatusCode);
         Assert.Equal(request.Email, createdUser.Email);
 
-        _authService.Verify(x => x.RegisterAsync(request, CancellationToken.None), Times.Once);
+        _sender.Verify(x => x.Send(It.Is<RegisterCommand>(c => c.Email == request.Email && c.Password == request.Password), CancellationToken.None), Times.Once);
     }
 
     [Fact]
@@ -140,11 +146,11 @@ public class AuthenticationControllerTests
             new IdentityError("Email", "Email is already registered.")
         };
 
-        _authService
-            .Setup(x => x.RegisterAsync(request, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new RegistrationFailed(errors));
+        _sender
+          .Setup(x => x.Send(It.IsAny<RegisterCommand>(), CancellationToken.None))
+          .ReturnsAsync(new RegistrationFailed(errors));
 
-        var result = await _controller.Register(request,CancellationToken.None);
+        var result = await _controller.Register(request, CancellationToken.None);
 
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
 
@@ -157,7 +163,7 @@ public class AuthenticationControllerTests
             "Email is already registered.",
             problem.Errors["Email"]);
 
-        _authService.Verify(x => x.RegisterAsync(request, CancellationToken.None),  Times.Once);
+        _sender.Verify(x => x.Send(It.Is<RegisterCommand>(c => c.Email == request.Email && c.Password == request.Password), CancellationToken.None), Times.Once);
     }
 
     [Fact]
@@ -177,8 +183,8 @@ public class AuthenticationControllerTests
             TokenType = "Bearer"
         };
 
-        _authService
-            .Setup(x => x.LoginAsync(request, It.IsAny<CancellationToken>()))
+        _sender
+            .Setup(x => x.Send(It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new LoginSucceeded(tokens));
 
         var result = await _controller.Login(request, CancellationToken.None);
@@ -194,8 +200,8 @@ public class AuthenticationControllerTests
         Assert.Equal(tokens.ExpiresAt, response.ExpiresAt);
         Assert.Equal(tokens.TokenType, response.TokenType);
 
-        _authService.Verify(
-            x => x.LoginAsync(request, CancellationToken.None),
+        _sender.Verify(
+            x => x.Send(It.Is<LoginCommand>(c => c.Email == request.Email && c.Password == request.Password), CancellationToken.None),
             Times.Once);
     }
 
@@ -209,8 +215,8 @@ public class AuthenticationControllerTests
             Password = "WrongPassword!"
         };
 
-        _authService
-            .Setup(x => x.LoginAsync(request, It.IsAny<CancellationToken>()))
+        _sender
+            .Setup(x => x.Send(It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new InvalidCredentials());
 
         var result = await _controller.Login(request, CancellationToken.None);
@@ -224,7 +230,7 @@ public class AuthenticationControllerTests
         Assert.Equal(StatusCodes.Status401Unauthorized, problem.Status);
         Assert.Equal("Invalid credentials.", problem.Title);
 
-        _authService.Verify(x => x.LoginAsync(request, CancellationToken.None), Times.Once);
+        _sender.Verify(x => x.Send(It.Is<LoginCommand>(c => c.Email == request.Email && c.Password == request.Password), CancellationToken.None), Times.Once);
     }
 
     [Fact]
@@ -234,15 +240,15 @@ public class AuthenticationControllerTests
         var email = "test@email.com";
         var deactivateRequest = new DeactivateUserRequest { Email = email };
 
-        _authService
-            .Setup(x => x.DeactivateAccountAsync(email, It.IsAny<CancellationToken>()))
+        _sender
+            .Setup(x => x.Send(It.IsAny<DeactivateUserCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AccountDeactivated());
 
         var result = await _controller.DeactivateAccount(deactivateRequest, CancellationToken.None);
         var noContent = Assert.IsType<OkResult>(result);
 
         Assert.Equal(StatusCodes.Status200OK, noContent.StatusCode);
-        _authService.Verify(x => x.DeactivateAccountAsync(email, CancellationToken.None), Times.Once);
+        _sender.Verify(x => x.Send(It.Is<DeactivateUserCommand>(c => c.Email == email), CancellationToken.None), Times.Once);
     }
 
     [Fact]
@@ -252,8 +258,8 @@ public class AuthenticationControllerTests
 
         var testEmail = "test@user.com";
 
-        _authService
-            .Setup(x => x.DeactivateAccountAsync(testEmail, It.IsAny<CancellationToken>()))
+        _sender
+            .Setup(x => x.Send(It.IsAny<DeactivateUserCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AccountNotFound());
 
         var result = await _controller.DeactivateAccount(new DeactivateUserRequest { Email = testEmail }, CancellationToken.None);
@@ -263,7 +269,7 @@ public class AuthenticationControllerTests
         var problem = Assert.IsType<ProblemDetails>(notFound.Value);
         Assert.Equal(StatusCodes.Status404NotFound, problem.Status);
 
-        _authService.Verify(x => x.DeactivateAccountAsync(testEmail, CancellationToken.None), Times.Once);
+        _sender.Verify(x => x.Send(It.Is<DeactivateUserCommand>(c => c.Email == testEmail), CancellationToken.None), Times.Once);
     }
 
     [Fact]
@@ -273,15 +279,15 @@ public class AuthenticationControllerTests
         var email = "test@email.com";
         var reactivateUserRequest = new ReactivateUserRequest { Email = email };
 
-        _authService
-            .Setup(x => x.ReactivateAccountAsync(email, It.IsAny<CancellationToken>()))
+        _sender
+            .Setup(x => x.Send(It.IsAny<ReactivateUserCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AccountReactivated());
 
         var result = await _controller.ReactivateAccount(reactivateUserRequest, CancellationToken.None);
         var noContent = Assert.IsType<OkResult>(result);
 
         Assert.Equal(StatusCodes.Status200OK, noContent.StatusCode);
-        _authService.Verify(x => x.ReactivateAccountAsync(email, CancellationToken.None), Times.Once);
+        _sender.Verify(x => x.Send(It.Is<ReactivateUserCommand>(c => c.Email == email), CancellationToken.None), Times.Once);
     }
 
     [Fact]
@@ -291,8 +297,8 @@ public class AuthenticationControllerTests
 
         var testEmail = "test@user.com";
 
-        _authService
-            .Setup(x => x.ReactivateAccountAsync(testEmail, It.IsAny<CancellationToken>()))
+        _sender
+            .Setup(x => x.Send(It.IsAny<ReactivateUserCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AccountNotFound());
 
         var result = await _controller.ReactivateAccount(new ReactivateUserRequest { Email = testEmail }, CancellationToken.None);
@@ -302,7 +308,7 @@ public class AuthenticationControllerTests
         var problem = Assert.IsType<ProblemDetails>(notFound.Value);
         Assert.Equal(StatusCodes.Status404NotFound, problem.Status);
 
-        _authService.Verify(x => x.ReactivateAccountAsync(testEmail, CancellationToken.None), Times.Once);
+        _sender.Verify(x => x.Send(It.Is<ReactivateUserCommand>(c => c.Email == testEmail), CancellationToken.None), Times.Once);
     }
 
     private void SetAuthenticatedUser(string userId)

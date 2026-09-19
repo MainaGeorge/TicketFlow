@@ -1,7 +1,12 @@
 ﻿using Asp.Versioning;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TicketFlow.Application.Authentication.Interfaces;
+using TicketFlow.Application.Authentication.Commands.DeactivateUser;
+using TicketFlow.Application.Authentication.Commands.Login;
+using TicketFlow.Application.Authentication.Commands.ReactivateUser;
+using TicketFlow.Application.Authentication.Commands.RefreshToken;
+using TicketFlow.Application.Authentication.Commands.Register;
 using TicketFlow.Application.Authentication.Models;
 using TicketFlow.Contracts.DTOs;
 using TicketFlow.Presentation.Mappings;
@@ -12,13 +17,14 @@ namespace TicketFlow.Presentation.Controllers;
 [ApiController]
 [ApiVersion("1.0")]
 [Authorize]
-public class AuthenticationController(IAuthenticationService authService) : ControllerBase
+public class AuthenticationController(ISender sender) : ControllerBase
 {
     [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest registrationDto, CancellationToken cancellationToken)
     {
-        var result = await authService.RegisterAsync(registrationDto, cancellationToken);
+        var command = new RegisterCommand(registrationDto.Email, registrationDto.Password, registrationDto.DisplayName);
+        var result = await sender.Send(command, cancellationToken);
 
         return result switch
         {
@@ -50,7 +56,8 @@ public class AuthenticationController(IAuthenticationService authService) : Cont
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request, CancellationToken cancellationToken)
     {
-        var loginResult = await authService.LoginAsync(request, cancellationToken);
+        var command = new LoginCommand(request.Email, request.Password);
+        var loginResult = await sender.Send(command, cancellationToken);
         return loginResult switch
         {
             InvalidCredentials _ => Unauthorized(new ProblemDetails
@@ -68,7 +75,8 @@ public class AuthenticationController(IAuthenticationService authService) : Cont
     [HttpPost("deactivate")]
     public async Task<IActionResult> DeactivateAccount(DeactivateUserRequest request, CancellationToken cancellationToken)
     {
-        var deActivationResult = await authService.DeactivateAccountAsync(request.Email, cancellationToken);
+        var command = new DeactivateUserCommand(request.Email);
+        var deActivationResult = await sender.Send(command, cancellationToken);
 
         return deActivationResult switch
         {
@@ -95,7 +103,8 @@ public class AuthenticationController(IAuthenticationService authService) : Cont
     [HttpPost("reactivate")]
     public async Task<IActionResult> ReactivateAccount(ReactivateUserRequest request, CancellationToken cancellationToken)
     {
-        var activationResult = await authService.ReactivateAccountAsync(request.Email, cancellationToken);
+        var command = new ReactivateUserCommand(request.Email);
+        var activationResult = await sender.Send(command, cancellationToken);
 
         return activationResult switch
         {
@@ -123,7 +132,8 @@ public class AuthenticationController(IAuthenticationService authService) : Cont
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh(RefreshTokenRequest request, CancellationToken cancellationToken)
     {
-        var result = await authService.RefreshTokenAsync(request, cancellationToken);
+        var command = new RefreshTokenCommand(request.RefreshToken);
+        var result = await sender.Send(command, cancellationToken);
 
         return result switch
         {
