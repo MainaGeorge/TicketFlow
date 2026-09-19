@@ -18,8 +18,4 @@
     <ProjectReference Include="..\TicketFlow.Domain\TicketFlow.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Authentication\Commands\ReactivateUser\" />
-  </ItemGroup>
-
 </Project>
