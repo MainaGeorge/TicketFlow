@@ -47,12 +47,7 @@ public sealed class CreateBookingCommandHandler(
             return new BookingEventUnavailable();
         }
 
-        var booking = new Booking
-        {
-            UserId = command.UserId,
-            SeatId = command.SeatId,
-            CreatedAt = DateTime.UtcNow
-        };
+        var booking = Booking.Create(command.UserId, command.SeatId, DateTime.UtcNow);
 
         await bookingRepository.AddAsync(booking, cancellationToken);
 
@@ -75,7 +70,7 @@ public sealed class CreateBookingCommandHandler(
                     }),
                 cancellationToken);
 
-            return new BookingCreated(booking);
+            return new BookingCreated(booking.Id, booking.SeatId, booking.UserId, booking.CreatedAt);
         }
         catch (SeatAlreadyBookedException)
         {

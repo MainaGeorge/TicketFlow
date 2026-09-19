@@ -23,10 +23,11 @@ public class GetBookingQueryHandlerTests
         var bookingId = 1;
         var userId = Guid.NewGuid().ToString();
         var bookingCommand = new GetBookingQuery(bookingId, userId);
+        var bookingResult = new BookingResult(bookingId, 1, userId, DateTime.UtcNow, "paymentReference", "A", 10, 100m, 10);
 
         _repository
             .Setup(x => x.GetBookingAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Booking { Id = 1, CreatedAt = DateTime.UtcNow, UserId = userId });
+            .ReturnsAsync(bookingResult);
 
         var booking = await _commandHandler.Handle(bookingCommand, CancellationToken.None);
 
@@ -34,7 +35,7 @@ public class GetBookingQueryHandlerTests
 
         _repository.Verify(x => x.GetBookingAsync(bookingId, userId, CancellationToken.None), Times.Once);
 
-        Assert.Equal(bookingId, result.Booking!.Id);
+        Assert.Equal(bookingId, result.Id);
     }
 
     [Fact]
@@ -46,7 +47,7 @@ public class GetBookingQueryHandlerTests
 
         _repository
             .Setup(x => x.GetBookingAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Booking?)null);
+            .ReturnsAsync((BookingResult?)null);
 
         var booking = await _commandHandler.Handle(bookingCommand, CancellationToken.None);
         _repository.Verify(x => x.GetBookingAsync(bookingId, userId, It.IsAny<CancellationToken>()), Times.Once);
@@ -62,14 +63,11 @@ public class GetBookingQueryHandlerTests
         var cancellationToken = cts.Token;
         var userId = Guid.NewGuid().ToString();
         var bookingCommand = new GetBookingQuery(bookingId, userId);
+        var bookingResult = new BookingResult(bookingId, 1, userId, DateTime.UtcNow, "paymentReference", "A", 10, 100m, 10);
 
         _repository
             .Setup(x => x.GetBookingAsync(bookingId, userId, cancellationToken))
-            .ReturnsAsync(new Booking
-            {
-                Id = bookingId,
-                UserId = userId
-            });
+            .ReturnsAsync(bookingResult);
 
         await _commandHandler.Handle(bookingCommand, cancellationToken);
 

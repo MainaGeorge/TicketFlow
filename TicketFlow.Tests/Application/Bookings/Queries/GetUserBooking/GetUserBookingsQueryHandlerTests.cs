@@ -23,7 +23,11 @@ public class GetUserBookingsQueryHandlerTests
         var createdAt = DateTime.UtcNow.AddDays(-10);
         var userId = Guid.NewGuid().ToString();
         var query = new GetUserBookingsQuery(userId);
-        List<Booking> bookings = [new Booking { Id=1, SeatId=5, CreatedAt=createdAt}, new Booking { Id = 2, SeatId = 6, CreatedAt = createdAt }];
+        List<BookingResult> bookings = 
+            [
+                new(10, 5, "userId", createdAt, "paymentReference", "A", 10, 100m, 10),
+                new(11, 6, "userId", createdAt, "paymentReference", "B", 20, 50m, 10),
+            ];
 
         _repository
             .Setup(x => x.GetUserBookingsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -34,15 +38,15 @@ public class GetUserBookingsQueryHandlerTests
         var retrievedBooking = Assert.IsAssignableFrom<IEnumerable<BookingResult>>(handlerResults).ToList();
 
         Assert.Equal(2, retrievedBooking.Count);
-        Assert.Contains(retrievedBooking, b => b.Booking!.Id == 1 && b.Booking!.CreatedAt == createdAt && b.Booking!.SeatId == 5);
-        Assert.Contains(retrievedBooking, b => b.Booking!.Id == 2 && b.Booking!.CreatedAt == createdAt && b.Booking!.SeatId == 6);
+        Assert.Contains(retrievedBooking, b => b.Id == 10 && b.CreatedAt == createdAt && b.SeatId == 5);
+        Assert.Contains(retrievedBooking, b => b.Id == 11 && b.CreatedAt == createdAt && b.SeatId == 6);
         _repository.Verify(x => x.GetUserBookingsAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task Handle_WhenUserHasNoBookings_ReturnsEmptyCollection()
     {
-        List<Booking> bookings = [];
+        List<BookingResult> bookings = [];
 
         var userId = Guid.NewGuid().ToString();
         var query = new GetUserBookingsQuery(userId);
@@ -62,7 +66,7 @@ public class GetUserBookingsQueryHandlerTests
     [Fact]
     public async Task Handle_PassesCancellationTokenToRepository()
     {
-        List<Booking> bookings = [];
+        List<BookingResult> bookings = [];
         using var cancellationToken = new CancellationTokenSource();
         var token = cancellationToken.Token;
 

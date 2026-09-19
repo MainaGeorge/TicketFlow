@@ -13,6 +13,6 @@ public class GetBookingQueryHandler(IBookingRepository bookingRepository) : IReq
         if (booking is null)
             return new BookingNotFound();
 
-        return new BookingResult(booking);
+        return booking;
     }
 }

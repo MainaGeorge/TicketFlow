@@ -41,26 +41,11 @@ public class BookingsControllerTests
     [Fact]
     public async Task CreateBooking_WhenServiceReturnsCreated_Returns201()
     {
-
-        var booking = new Booking
-        {
-            Id = 10,
-            SeatId = 5,
-            UserId = "user-123",
-            CreatedAt = DateTime.UtcNow.AddDays(10),
-            Seat = new Seat
-            {
-                Id = 5,
-                EventId = 10,
-                Row = "A",
-                Number = 1,
-                Price = 100
-            }
-        };
+        var bookingId = 10;
 
         _sender
             .Setup(x => x.Send(It.IsAny<CreateBookingCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new BookingCreated(booking));
+            .ReturnsAsync(new BookingCreated(bookingId, 5, "userId", DateTime.UtcNow));
 
         var request = new CreateBookingRequest { EventId = 1, SeatId = 5 };
         var result = await _controller.CreateBooking(request, CancellationToken.None);
@@ -68,7 +53,7 @@ public class BookingsControllerTests
         var bookingCreated = Assert.IsType<BookingDto>(createdResult.Value);
 
         Assert.Equal(nameof(BookingsController.GetBooking), createdResult.ActionName);
-        Assert.Equal(10, createdResult.RouteValues!["id"]);
+        Assert.Equal(bookingId, createdResult.RouteValues!["id"]);
     }
 
     [Fact]
@@ -151,25 +136,11 @@ public class BookingsControllerTests
     [Fact]
     public async Task GetBooking_WhenFound_Returns200()
     {
-        var booking = new Booking
-        {
-            Id = 10,
-            SeatId = 5,
-            UserId = "user-123",
-            CreatedAt = DateTime.UtcNow.AddDays(10),
-            Seat = new Seat
-            {
-                Id = 5,
-                EventId = 10,
-                Row = "A",
-                Number = 1,
-                Price = 100
-            }
-        };
+        var bookingResult = new BookingResult(10, 5, "user-123", DateTime.UtcNow, "paymentReference", "A", 1, 100m, 10);
 
         _sender
             .Setup(x => x.Send(It.IsAny<GetBookingQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new BookingResult(booking));
+            .ReturnsAsync(bookingResult);
 
         var result = await _controller.GetBooking(10, CancellationToken.None);
 
@@ -177,13 +148,13 @@ public class BookingsControllerTests
 
         var retrievedBooking = Assert.IsType<BookingDto>(okResult.Value);
 
-        Assert.Equal(booking.Id, retrievedBooking!.Id);
-        Assert.Equal(booking.SeatId, retrievedBooking.SeatId);
-        Assert.Equal(booking.UserId, retrievedBooking.UserId);
-        Assert.Equal(booking.Seat.Price, retrievedBooking.Price);
-        Assert.Equal(booking.Seat.Row, retrievedBooking.SeatRow);
-        Assert.Equal(booking.Seat.Number, retrievedBooking.SeatNumber);
-        Assert.Equal(booking.Seat.EventId, retrievedBooking.EventId);
+        Assert.Equal(bookingResult.Id, retrievedBooking!.Id);
+        Assert.Equal(bookingResult.SeatId, retrievedBooking.SeatId);
+        Assert.Equal(bookingResult.UserId, retrievedBooking.UserId);
+        Assert.Equal(bookingResult.SeatPrice, retrievedBooking.Price);
+        Assert.Equal(bookingResult.SeatRow, retrievedBooking.SeatRow);
+        Assert.Equal(bookingResult.SeatNumber, retrievedBooking.SeatNumber);
+        Assert.Equal(bookingResult.EventId, retrievedBooking.EventId);
     }
 
     [Fact]

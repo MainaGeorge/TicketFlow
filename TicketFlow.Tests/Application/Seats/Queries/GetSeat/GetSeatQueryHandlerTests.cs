@@ -26,7 +26,7 @@ public class GetSeatQueryHandlerTests
         var seatId = 1;
         var eventId = 1;
 
-        var seat = new Seat { Id = seatId, EventId = eventId, Row = "A", Number = 12, Price = 20m, Booking = new Booking { Id = 10 } };
+        var seat = new Seat { Id = seatId, EventId = eventId, Row = "A", Number = 12, Price = 20m, Booking = Booking.Create("", 1, DateTime.UtcNow) };
 
         _seatsRepository
             .Setup(x => x.GetSeatAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))

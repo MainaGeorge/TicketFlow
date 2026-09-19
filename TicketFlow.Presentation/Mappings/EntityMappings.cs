@@ -1,22 +1,34 @@
-﻿using TicketFlow.Contracts.DTOs;
+﻿using TicketFlow.Application.Bookings.Models;
+using TicketFlow.Contracts.DTOs;
 using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Presentation.Mappings;
 
 public static class EntityMappings
 {
-    public static BookingDto MapToBookingDto(this Booking result, string userId)
+    public static BookingDto MapToBookingDto(this BookingResult result, string userId)
     {
         return new BookingDto
         {
             Id = result!.Id,
             UserId = userId,
-            SeatId = result.Seat!.Id,
+            SeatId = result.SeatId,
             CreatedAt = result.CreatedAt,
-            EventId = result.Seat!.EventId,
-            SeatRow = result.Seat.Row,
-            SeatNumber = result.Seat.Number,
-            Price = result.Seat.Price
+            EventId = result.EventId,
+            SeatRow = result.SeatRow,
+            SeatNumber = result.SeatNumber,
+            Price = result.SeatPrice
+        };
+    }
+
+    public static BookingDto MapToBookingDto(this BookingCreated result, string userId)
+    {
+        return new BookingDto
+        {
+            Id = result!.Id,
+            UserId = userId,
+            SeatId = result.SeatId,
+            CreatedAt = result.CreatedAt
         };
     }
 

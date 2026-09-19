@@ -1,6 +1,6 @@
 ﻿namespace TicketFlow.Domain.Entities;
 
-public class RefreshToken
+public class RefreshToken : Entity
 {
     public int Id { get; set; }
     public string Token { get; set; } = string.Empty;

@@ -195,7 +195,7 @@ public class CreateBookingCommandHandlerTests
     public async Task Handle_WhenSeatAlreadyBooked_ReturnsAlreadyBooked()
     {
         var eventId = 1;
-        var seat = new Seat { Id = 1, Booking = new Booking { Id = 2 }, Event = new Event { EventDate = DateTime.UtcNow.AddDays(10) } };
+        var seat = new Seat { Id = 1, Booking = Booking.Create("user-id", 1, DateTime.UtcNow), Event = new Event { EventDate = DateTime.UtcNow.AddDays(10) } };
         var userId = Guid.NewGuid().ToString();
 
         var @event = new Event { Id = eventId, EventDate = DateTime.UtcNow.AddDays(10) };

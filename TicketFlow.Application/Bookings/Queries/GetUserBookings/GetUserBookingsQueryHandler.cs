@@ -8,8 +8,6 @@ public class GetUserBookingsQueryHandler(IBookingRepository bookingRepository) :
 {
     public async Task<IEnumerable<BookingResult>> Handle(GetUserBookingsQuery request, CancellationToken cancellationToken)
     {
-        var bookings =  await bookingRepository.GetUserBookingsAsync(request.UserId, cancellationToken);
-
-        return bookings.Select(x => new BookingResult(x));
+        return await bookingRepository.GetUserBookingsAsync(request.UserId, cancellationToken);
     }
 }

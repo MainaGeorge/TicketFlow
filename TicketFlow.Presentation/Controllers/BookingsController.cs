@@ -45,8 +45,8 @@ public class BookingsController(ISender sender, ILogger<BookingsController> logg
             BookingCreated created =>
                 CreatedAtAction(
                     nameof(GetBooking),
-                    new { id = created.Booking!.Id },
-                    created.Booking.MapToBookingDto(userId)),
+                    new { id = created.Id },
+                    created.MapToBookingDto(userId)),
 
             BookingSeatNotFound =>
                 NotFound(
@@ -123,7 +123,7 @@ public class BookingsController(ISender sender, ILogger<BookingsController> logg
                 Detail = $"The specified booking with id {id} could not be found.",
                 Instance = HttpContext.Request.Path
             }),
-            BookingResult bookingResult => Ok(bookingResult.Booking!.MapToBookingDto(userId)),
+            BookingResult bookingResult => Ok(bookingResult.MapToBookingDto(userId)),
             _ => throw new InvalidOperationException("Unknown booking result.")
         };
     }
@@ -146,6 +146,6 @@ public class BookingsController(ISender sender, ILogger<BookingsController> logg
         }
 
         var bookings = await sender.Send(new GetUserBookingsQuery(userId), cancellationToken);
-        return Ok(bookings.Select(b => b.Booking!.MapToBookingDto(userId)));
+        return Ok(bookings.Select(b => b.MapToBookingDto(userId)));
     }
 }
