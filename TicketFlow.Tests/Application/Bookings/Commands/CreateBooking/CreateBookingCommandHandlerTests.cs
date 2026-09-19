@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 using TicketFlow.Application.ApplicationEvents.BookingCreated;
-using TicketFlow.Application.Background;
 using TicketFlow.Application.Bookings.Commands.CreateBooking;
 using TicketFlow.Application.Bookings.Interfaces;
 using TicketFlow.Application.Bookings.Models;
