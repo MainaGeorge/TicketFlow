@@ -26,7 +26,7 @@ public class ReactivateUserCommandHandler(
             return new AccountAlreadyActivated();
         }
 
-        user.IsActive = true;
+        user.Reactivate();
         var updatedUser = await identityService.UpdateUserAsync(user, cancellationToken);
 
         if (updatedUser.Success)

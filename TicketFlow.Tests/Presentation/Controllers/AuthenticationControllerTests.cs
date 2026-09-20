@@ -11,6 +11,7 @@ using TicketFlow.Application.Authentication.Commands.Register;
 using TicketFlow.Application.Authentication.Interfaces;
 using TicketFlow.Application.Authentication.Models;
 using TicketFlow.Contracts.DTOs;
+using TicketFlow.Domain.Entities;
 using TicketFlow.Presentation.Controllers;
 
 namespace TicketFlow.Tests.Presentation.Controllers;
@@ -117,7 +118,7 @@ public class AuthenticationControllerTests
 
         _sender
             .Setup(x => x.Send(It.IsAny<RegisterCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new RegistrationSucceeded(new Domain.Entities.User { Email = request.Email }));
+            .ReturnsAsync(new RegistrationSucceeded(new User { Email = request.Email }));
 
         var result = await _controller.Register(request, CancellationToken.None);
 

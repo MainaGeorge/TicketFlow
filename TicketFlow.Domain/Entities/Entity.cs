@@ -2,7 +2,7 @@
 
 namespace TicketFlow.Domain.Entities;
 
-public abstract class Entity
+public abstract class Entity : IHasDomainEvents
 {
     private readonly List<IDomainEvent> _domainEvents = [];
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
