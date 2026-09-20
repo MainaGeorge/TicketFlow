@@ -43,7 +43,7 @@ public class RegisterCommandHandlerTests
     public async Task Handle_WhenIdentityCreatesUser_ReturnsRegistrationSucceeded()
     {
         var (email, password, displayName) = ("test@user.com", "password", "testDisplayName");
-        var user = new User { Email = email, UserName = email, DisplayName = displayName, IsActive = true };
+        var user = new User { Email = email, UserName = email, DisplayName = displayName };
         var registerCommand = new RegisterCommand(email, password, displayName);
         var identityCreationResult = new IdentityCreationResult(true, user, null);
 
@@ -155,7 +155,7 @@ public class RegisterCommandHandlerTests
     public async Task Handle_PassesCancellationTokenToIdentityService()
     {
         var (email, password, displayName) = ("test@user.com", "password", "testDisplayName");
-        var user = new User { Email = email, UserName = email, DisplayName = displayName, IsActive = true };
+        var user = new User { Email = email, UserName = email, DisplayName = displayName};
         var registerCommand = new RegisterCommand(email, password, displayName);
         var identityCreationResult = new IdentityCreationResult(true, user, null);
         using var cancellationTokenSource = new CancellationTokenSource();

@@ -23,7 +23,7 @@ public class GetBookingQueryValidatorTests
     [InlineData(null)]
     public async Task Validate_WhenUserIdIsInValid_HasValidationError(string? userId)
     {
-        var query = new GetBookingQuery(1, userId);
+        var query = new GetBookingQuery(1, userId!);
         var validator = new GetBookingQueryValidator();
         var results = await validator.TestValidateAsync(query);
 

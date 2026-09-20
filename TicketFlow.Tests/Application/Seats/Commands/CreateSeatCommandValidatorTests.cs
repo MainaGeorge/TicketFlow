@@ -60,7 +60,7 @@ public class CreateSeatCommandValidatorTests
     public async Task Validate_WhenRowIsNullOrWhitespace_HasValidationError(string? row)
     {
         var validator = new CreateSeatCommandValidator();
-        var command = new CreateSeatCommand(1, row, 3, 0.01m);
+        var command = new CreateSeatCommand(1, row!, 3, 0.01m);
 
         var results = await validator.TestValidateAsync(command);
 

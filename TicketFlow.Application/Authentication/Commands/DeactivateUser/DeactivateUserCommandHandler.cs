@@ -26,7 +26,7 @@ public class DeactivateUserCommandHandler(
             return new AccountAlreadyDeactivated();
         }
 
-        user.IsActive = false;
+        user.Deactivate();
         var updatedUser = await identityService.UpdateUserAsync(user, cancellationToken);
 
         if (updatedUser.Success)

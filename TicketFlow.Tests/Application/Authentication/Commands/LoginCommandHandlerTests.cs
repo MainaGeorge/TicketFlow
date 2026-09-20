@@ -30,7 +30,7 @@ public class LoginCommandHandlerTests
     {
         var (email, password) = ("test@email.com", "password");
         var command = new LoginCommand(email, password);
-        var activeUser = new User { Id = "user-id", Email = email, IsActive = true };
+        var activeUser = new User { Id = "user-id", Email = email };
         var expiresAt = DateTime.UtcNow;
         var tokenResponse = new TokenResponse { AccessToken = "access token", ExpiresAt = expiresAt, RefreshToken = "refresh token", TokenType = "bearer" };
 
@@ -99,7 +99,8 @@ public class LoginCommandHandlerTests
     {
         var (email, password) = ("test@email.com", "password");
         var command = new LoginCommand(email, password);
-        var inactiveUser = new User { Email = email, IsActive = false };
+        var inactiveUser = new User { Email = email };
+        inactiveUser.Deactivate();
 
         _identityService
             .Setup(x => x.FindByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -121,7 +122,7 @@ public class LoginCommandHandlerTests
     {
         var (email, password) = ("test@email.com", "password");
         var command = new LoginCommand(email, password);
-        var activeUser = new User { Email = email, IsActive = true };
+        var activeUser = new User { Email = email };
 
         _identityService
             .Setup(x => x.FindByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -170,7 +171,7 @@ public class LoginCommandHandlerTests
         var exception = new InvalidOperationException("Unexpected error");
         var (email, password) = ("test@email.com", "password");
         var command = new LoginCommand(email, password);
-        var activeUser = new User { Email = email, IsActive = true };
+        var activeUser = new User { Email = email };
 
         _identityService
             .Setup(x => x.FindByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -201,7 +202,7 @@ public class LoginCommandHandlerTests
         var exception = new InvalidOperationException("Unexpected error");
         var (email, password) = ("test@email.com", "password");
         var command = new LoginCommand(email, password);
-        var activeUser = new User { Email = email, IsActive = true };
+        var activeUser = new User { Email = email };
         var tokenResponse = new TokenResponse { AccessToken = "access token", ExpiresAt = DateTime.UtcNow, RefreshToken = "refresh token", TokenType = "bearer" };
 
         _identityService
@@ -245,7 +246,6 @@ public class LoginCommandHandlerTests
         {
             Id = "user-id",
             Email = email,
-            IsActive = true
         };
 
         var tokenResponse = new TokenResponse

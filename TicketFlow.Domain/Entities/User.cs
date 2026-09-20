@@ -9,7 +9,7 @@ public class User : IdentityUser, IHasDomainEvents
     private readonly List<IDomainEvent> _domainEvents = []; 
     public string DisplayName { get; set; } = string.Empty;
     public string? UserId { get; set; }
-    public bool IsActive { get; set; } = true;
+    public bool IsActive { get; private set; } = true;
     public virtual ICollection<Booking> Bookings { get; set; } = [];
     public ICollection<RefreshToken> RefreshTokens { get; set; } = [];
 
@@ -27,6 +27,14 @@ public class User : IdentityUser, IHasDomainEvents
 
         IsActive = true;
         RaiseDomainEvent(new UserReactivateDomainEvent(Id));
+    }
+
+    public void Deactivate()
+    {
+        if (!IsActive)
+            return;
+
+        IsActive = false;
     }
 
     private void RaiseDomainEvent(IDomainEvent domainEvent) => _domainEvents.Add(domainEvent);

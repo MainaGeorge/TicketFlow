@@ -35,7 +35,7 @@ public class CreateBookingCommandValidatorTests
     [InlineData(null)]
     public async Task Validate_WhenUserIdIsNotValid_HasValidationError(string? userId)
     {
-        var command = new CreateBookingCommand(1, 1, userId);
+        var command = new CreateBookingCommand(1, 1, userId!);
         var validator = new CreateBookingCommandValidator();
         var result = await validator.TestValidateAsync(command);
 

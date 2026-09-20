@@ -28,7 +28,7 @@ public class RefreshTokenCommandHandlerTests
         var accessToken = "some-new -access-token";
         var expiresAt = DateTime.UtcNow.AddDays(2);
         var userId = Guid.NewGuid().ToString();
-        var user = new User { IsActive = true, Id = userId };
+        var user = new User { Id = userId };
         var refreshToken = new RefreshToken { Token = oldRefreshToken, User = user, UserId = userId, ExpiresAt = DateTime.UtcNow.AddDays(10) };
 
         var tokenResponse = new TokenResponse { AccessToken = accessToken, ExpiresAt = expiresAt, TokenType = "Bearer", RefreshToken = newRefreshToken };
@@ -68,7 +68,7 @@ public class RefreshTokenCommandHandlerTests
         var accessToken = "some-new -access-token";
         var expiresAt = DateTime.UtcNow.AddDays(2);
         var userId = Guid.NewGuid().ToString();
-        var user = new User { IsActive = true, Id = userId };
+        var user = new User { Id = userId };
         var refreshToken = new RefreshToken { Token = oldRefreshToken, User = user, ExpiresAt = DateTime.UtcNow.AddDays(10) };
         using var cancellationTokenSource = new CancellationTokenSource();
         var token = cancellationTokenSource.Token;
@@ -117,7 +117,6 @@ public class RefreshTokenCommandHandlerTests
                 Id = "user-1",
                 Email = email,
                 UserName = email,
-                IsActive = true
             }
         };
 
@@ -190,7 +189,6 @@ public class RefreshTokenCommandHandlerTests
                 Id = "user-1",
                 Email = email,
                 UserName = email,
-                IsActive = true
             }
         };
 
@@ -223,7 +221,6 @@ public class RefreshTokenCommandHandlerTests
                 Id = "user-1",
                 Email = email,
                 UserName = email,
-                IsActive = true
             }
         };
 
@@ -265,12 +262,12 @@ public class RefreshTokenCommandHandlerTests
         {
             Id = 1,
             Token = "old-refresh-token",
-            UserId = null,
+            UserId = null!,
             CreatedAt = DateTimeOffset.UtcNow.AddDays(-1),
             ExpiresAt = DateTimeOffset.UtcNow.AddDays(6),
             ReplacedBy = null,
             RevokedAt = null,
-            User = null
+            User = null!
         };
 
         _refreshTokenRepository
@@ -304,10 +301,11 @@ public class RefreshTokenCommandHandlerTests
             {
                 Id = "user-1",
                 Email = email,
-                UserName = email,
-                IsActive = false
+                UserName = email
             }
         };
+
+        oldRefreshToken.User.Deactivate();
 
         _refreshTokenRepository
             .Setup(x => x.GetByTokenAsync(oldRefreshToken.Token, It.IsAny<CancellationToken>()))
@@ -331,7 +329,7 @@ public class RefreshTokenCommandHandlerTests
         var accessToken = "some-new -access-token";
         var expiresAt = DateTime.UtcNow.AddDays(2);
         var userId = Guid.NewGuid().ToString();
-        var user = new User { IsActive = true, Id = userId };
+        var user = new User { Id = userId };
         var refreshToken = new RefreshToken { Token = oldRefreshToken, User = user, ExpiresAt = DateTime.UtcNow.AddDays(10) };
         var exception = new InvalidOperationException("Something terrible");
 
@@ -372,7 +370,7 @@ public class RefreshTokenCommandHandlerTests
         var accessToken = "some-new -access-token";
         var expiresAt = DateTime.UtcNow.AddDays(2);
         var userId = Guid.NewGuid().ToString();
-        var user = new User { IsActive = true, Id = userId };
+        var user = new User { Id = userId };
         var refreshToken = new RefreshToken { Token = oldRefreshToken, User = user, ExpiresAt = DateTime.UtcNow.AddDays(10) };
         var exception = new InvalidOperationException("Something terrible");
 
@@ -409,7 +407,7 @@ public class RefreshTokenCommandHandlerTests
         var accessToken = "some-new -access-token";
         var expiresAt = DateTime.UtcNow.AddDays(2);
         var userId = Guid.NewGuid().ToString();
-        var user = new User { IsActive = true, Id = userId };
+        var user = new User { Id = userId };
         var refreshToken = new RefreshToken { Token = oldRefreshToken, User = user, ExpiresAt = DateTime.UtcNow.AddDays(10) };
         var exception = new InvalidOperationException("Something terrible");
 
@@ -442,7 +440,7 @@ public class RefreshTokenCommandHandlerTests
         var accessToken = "some-new -access-token";
         var expiresAt = DateTime.UtcNow.AddDays(2);
         var userId = Guid.NewGuid().ToString();
-        var user = new User { IsActive = true, Id = userId };
+        var user = new User { Id = userId };
         var refreshToken = new RefreshToken { Token = oldRefreshToken, User = user, ExpiresAt = DateTime.UtcNow.AddDays(10) };
         var exception = new InvalidOperationException("Something terrible");
 

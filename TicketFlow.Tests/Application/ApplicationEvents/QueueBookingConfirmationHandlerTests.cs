@@ -19,7 +19,7 @@ public class QueueBookingConfirmationHandlerTests
     [Fact]
     public async Task Handle_WhenBookingCreated_QueuesBookingConfirmationWork()
     {
-        BackgroundWorkItem capturedWorkItem = null;
+        BackgroundWorkItem? capturedWorkItem = null;
 
         _queue
             .Setup(x => x.QueueAsync(It.IsAny<BackgroundWorkItem>(), It.IsAny<CancellationToken>()))

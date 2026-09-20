@@ -44,7 +44,7 @@ public class DeactivateUserCommandHandlerTests
     {
         var exception = new InvalidOperationException("Unexpected error");
         var command = new DeactivateUserCommand(Email);
-        var activeUser = new User { Email = Email, IsActive = true, Id = "SomeId" };
+        var activeUser = new User { Email = Email, Id = "SomeId" };
 
         _identityService
             .Setup(x => x.FindByEmailAsync(Email, It.IsAny<CancellationToken>()))
@@ -82,7 +82,7 @@ public class DeactivateUserCommandHandlerTests
     [Fact]
     public async Task Handle_WhenUserUpdateFails_ReturnsAccountDeActivationFailedResult()
     {
-        var activeUser = new User { Email = Email, IsActive = true };
+        var activeUser = new User { Email = Email };
         var error = new IdentityError("Creation", "Something went wrong while updating the user");
         var errorList = new List<IdentityError>() { error };
         var userUpdateErrors = errorList.AsReadOnly();
@@ -109,7 +109,7 @@ public class DeactivateUserCommandHandlerTests
     [Fact]
     public async Task Handle_WhenUserUpdateSucceeds_ReturnsAccountDeactivatedResult()
     {
-        var activeUser = new User { Email = Email, IsActive = true };
+        var activeUser = new User { Email = Email };
         var command = new DeactivateUserCommand(Email);
 
         _identityService
@@ -131,7 +131,7 @@ public class DeactivateUserCommandHandlerTests
     [Fact]
     public async Task Handle_PassesCancellationToken_ToIdentityService()
     {
-        var activeUser = new User { Email = Email, IsActive = true };
+        var activeUser = new User { Email = Email };
         var command = new DeactivateUserCommand(Email);
         using var source = new CancellationTokenSource();
         var token = source.Token;
@@ -156,8 +156,9 @@ public class DeactivateUserCommandHandlerTests
         var inactiveUser = new User
         {
             Email = Email,
-            IsActive = false
         };
+
+        inactiveUser.Deactivate();
 
         _identityService
             .Setup(x => x.FindByEmailAsync(Email, CancellationToken.None))

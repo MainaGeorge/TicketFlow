@@ -44,7 +44,8 @@ public class ReactivateUserCommandHandlerTests
     {
         var exception = new InvalidOperationException("Unexpected error");
         var command = new ReactivateUserCommand(Email);
-        var inactiveUser = new User { Email = Email, IsActive = false, Id = "SomeId" };
+        var inactiveUser = new User { Email = Email, Id = "SomeId" };
+        inactiveUser.Deactivate();
 
         _identityService
             .Setup(x => x.FindByEmailAsync(Email, It.IsAny<CancellationToken>()))
@@ -82,7 +83,8 @@ public class ReactivateUserCommandHandlerTests
     [Fact]
     public async Task Handle_WhenUserUpdateFails_ReturnsAccountReActivationFailedResult()
     {
-        var inactiveUser = new User { Email = Email, IsActive = false };
+        var inactiveUser = new User { Email = Email };
+        inactiveUser.Deactivate();
         var error = new IdentityError("Creation", "Something went wrong while updating the user");
         var errorList = new List<IdentityError>() { error };
         var userUpdateErrors = errorList.AsReadOnly();
@@ -109,7 +111,8 @@ public class ReactivateUserCommandHandlerTests
     [Fact]
     public async Task Handle_WhenUserUpdateSucceeds_ReturnsAccountReactivatedResult()
     {
-        var inactiveUser = new User { Email = Email, IsActive = false };
+        var inactiveUser = new User { Email = Email };
+        inactiveUser.Deactivate();
         var command = new ReactivateUserCommand(Email);
 
         _identityService
@@ -131,7 +134,8 @@ public class ReactivateUserCommandHandlerTests
     [Fact]
     public async Task Handle_PassesCancellationToken_ToIdentityService()
     {
-        var inactiveUser = new User { Email = Email, IsActive = false };
+        var inactiveUser = new User { Email = Email };
+        inactiveUser.Deactivate();
         var command = new ReactivateUserCommand(Email);
         using var source = new CancellationTokenSource();
         var token = source.Token;
@@ -156,7 +160,6 @@ public class ReactivateUserCommandHandlerTests
         var activeUser = new User
         {
             Email = Email,
-            IsActive = true
         };
 
         _identityService

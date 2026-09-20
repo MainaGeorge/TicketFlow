@@ -21,7 +21,6 @@ public class RegisterCommandHandler(IIdentityService identityService, ILogger<Re
         {
             UserName = request.Email,
             Email = request.Email,
-            IsActive = true,
             DisplayName = request.DisplayName
         };
 

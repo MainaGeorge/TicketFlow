@@ -25,7 +25,7 @@ public class CreateEventCommandValidatorTests
     {
         var validator = new CreateEventCommandValidator();
 
-        var command = new CreateEventCommand("Test Event", venue, DateTime.UtcNow.AddDays(1), "user-id");
+        var command = new CreateEventCommand("Test Event", venue!, DateTime.UtcNow.AddDays(1), "user-id");
         var result = await validator.TestValidateAsync(command);
 
         result.ShouldHaveValidationErrorFor(x => x.Venue);
@@ -51,7 +51,7 @@ public class CreateEventCommandValidatorTests
     {
         var validator = new CreateEventCommandValidator();
 
-        var command = new CreateEventCommand(name, "Test Venue", DateTime.UtcNow.AddDays(1), "user-id");
+        var command = new CreateEventCommand(name!, "Test Venue", DateTime.UtcNow.AddDays(1), "user-id");
         var result = await validator.TestValidateAsync(command);
 
         result.ShouldHaveValidationErrorFor(x => x.Name);

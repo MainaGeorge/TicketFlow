@@ -57,8 +57,9 @@ public class AppDbContextTests
                 UserName = email,
                 Email = email,
                 DisplayName = "Test User",
-                IsActive = false
             };
+
+            user.Deactivate();
 
             var createResult = await userManager.CreateAsync(user, "Test123!");
             Assert.True(createResult.Succeeded);
@@ -113,8 +114,9 @@ public class AppDbContextTests
             UserName = email,
             Email = email,
             DisplayName = "Test User",
-            IsActive = false
         };
+
+        user.Deactivate();
 
         var createdUser = await userManager.CreateAsync(user, "Test123**90!");
         Assert.True(createdUser.Succeeded);

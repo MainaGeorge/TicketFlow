@@ -95,7 +95,7 @@ public class AuthenticationEndpointTests
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
         var user = await userManager.FindByEmailAsync("alice@test.com");
 
-        user!.IsActive = false;
+        user!.Deactivate();
 
         await dbContext.SaveChangesAsync();
 
