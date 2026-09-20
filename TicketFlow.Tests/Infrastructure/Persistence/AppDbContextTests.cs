@@ -1,14 +1,12 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Moq;
+using System.Text.Json;
 using TicketFlow.Application.ApplicationEvents;
 using TicketFlow.Application.Authentication.Commands.ReactivateUser;
 using TicketFlow.Application.Authentication.Models;
-using TicketFlow.Domain.Common;
 using TicketFlow.Domain.Entities;
 using TicketFlow.Domain.Events;
 using TicketFlow.Infrastructure.Persistence;
@@ -19,29 +17,9 @@ namespace TicketFlow.Tests.Infrastructure.Persistence;
 public class AppDbContextTests
 {
     [Fact]
-    public async Task SaveChangesAsync_WhenEntityHasDomainEvents_DispatchesDomainEvents()
+    public async Task SaveChangesAsync_WhenEntityHasDomainEvents_PersistsOutboxMessage()
     {
-        var dispatcher = new Mock<IDomainEventDispatcher>();
-        List<IDomainEvent> dispatchedEvents = [];
-
-        dispatcher
-            .Setup(x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), It.IsAny<CancellationToken>()))
-            .Callback<IEnumerable<IDomainEvent>, CancellationToken>((domainEvents, _) => 
-            {
-                dispatchedEvents = [.. domainEvents];
-            })
-            .Returns(Task.CompletedTask);
-
-        var factory = new CustomWebApplicationFactory()
-            .WithWebHostBuilder(builder =>
-            {
-                builder.ConfigureTestServices(services =>
-                {
-                    services.RemoveAll<IDomainEventDispatcher>();
-                    services.AddScoped(_ => dispatcher.Object);
-                });
-            });
-
+        var factory = new CustomWebApplicationFactory();
         using var source = new CancellationTokenSource();
         var token = source.Token;
         string? userId = null;
@@ -76,34 +54,32 @@ public class AppDbContextTests
         await using (var verificationScope = factory.Services.CreateAsyncScope())
         {
             var userManager = verificationScope.ServiceProvider.GetRequiredService<UserManager<User>>();
+            var dbContext = verificationScope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             var persistedUser = await userManager.FindByIdAsync(userId);
 
             Assert.NotNull(persistedUser);
             Assert.True(persistedUser.IsActive);
+
+            var outboxMessage = await dbContext.OutboxMessages.SingleAsync();
+
+            Assert.Null(outboxMessage.ProcessedAt);
+            Assert.Equal(typeof(UserReactivateDomainEvent).FullName, outboxMessage.Type);
+
+            var domainEvent = JsonSerializer.Deserialize<UserReactivateDomainEvent>(outboxMessage.Payload);
+
+            Assert.NotNull(domainEvent);
+            Assert.Equal(userId, domainEvent.UserId);
         }
-
-        var raisedDomainEvent = Assert.IsType<UserReactivateDomainEvent>(Assert.Single(dispatchedEvents));
-        Assert.Equal(userId, raisedDomainEvent.UserId);
-
-        dispatcher.Verify(x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task SaveChangesAsync_WhenDomainEventsAreDispatched_ClearsEventsAndDoesNotRedispatch()
+    public async Task SaveChangesAsync_WhenDomainEventsArePersisted_ClearsEventsAndDoesNotCreateDuplicateOutboxMessages()
     {
         using var source = new CancellationTokenSource();
         var token = source.Token;
         var dispatcher = new Mock<IDomainEventDispatcher>();
-        var factory = new CustomWebApplicationFactory()
-            .WithWebHostBuilder(builder =>
-            {
-                builder.ConfigureTestServices(services =>
-                {
-                    services.RemoveAll<IDomainEventDispatcher>();
-                    services.AddScoped(_ => dispatcher.Object);
-                });
-            });
+        var factory = new CustomWebApplicationFactory();
 
         await using var scope = factory.Services.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -127,10 +103,13 @@ public class AppDbContextTests
         Assert.Single(user.DomainEvents);
 
         await dbContext.SaveChangesAsync(token);
+
+        Assert.Equal(1, await dbContext.OutboxMessages.CountAsync());
         Assert.Empty(user.DomainEvents);
 
         await dbContext.SaveChangesAsync(token);
 
-        dispatcher.Verify(x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), token), Times.Once);
+        Assert.Equal(1, await dbContext.OutboxMessages.CountAsync());
+        Assert.Empty(user.DomainEvents);
     }
 }
