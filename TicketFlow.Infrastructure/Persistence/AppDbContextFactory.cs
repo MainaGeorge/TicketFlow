@@ -1,11 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using TicketFlow.Application.ApplicationEvents;
+using TicketFlow.Domain.Common;
 
 namespace TicketFlow.Infrastructure.Persistence;
 
-public class AppDbContextFactory
-    : IDesignTimeDbContextFactory<AppDbContext>
+public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
     public AppDbContext CreateDbContext(string[] args)
     {
@@ -24,7 +25,7 @@ public class AppDbContextFactory
 
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>().UseSqlServer(connectionString);
 
-        return new AppDbContext(optionsBuilder.Options);
+        return new AppDbContext(optionsBuilder.Options, new NoOpDomainEventDispatcher());
     }
 
     private static string GetPresentationPath()
@@ -44,5 +45,15 @@ public class AppDbContextFactory
         }
 
         throw new DirectoryNotFoundException("Could not locate TicketFlow.Presentation.");
+    }
+
+    internal sealed class NoOpDomainEventDispatcher : IDomainEventDispatcher
+    {
+        public Task DispatchAsync(
+            IEnumerable<IDomainEvent> domainEvents,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
     }
 }
