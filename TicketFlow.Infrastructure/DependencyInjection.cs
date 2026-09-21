@@ -10,6 +10,7 @@ using TicketFlow.Application.Seats.Interfaces;
 using TicketFlow.Domain.Entities;
 using TicketFlow.Infrastructure.Background;
 using TicketFlow.Infrastructure.Persistence;
+using TicketFlow.Infrastructure.Persistence.Outbox;
 using TicketFlow.Infrastructure.Persistence.Repositories;
 using TicketFlow.Infrastructure.Services;
 
@@ -46,6 +47,22 @@ public static class DependencyInjection
         services.Configure<BackgroundRetryOptions>(configuration.GetSection("BackgroundRetry"));
         services.AddScoped<IFailedBackgroundJobStore, FailedBackgroundJobStore>();
         services.AddScoped<IProcessedBackgroundJobStore, ProcessedBackgroundJobStore>();
+        services.AddOutbox(configuration);
+
+        return services;
+    }
+
+    private static IServiceCollection AddOutbox(this IServiceCollection services, IConfiguration configuration)
+    {
+        services
+            .AddOptions<OutboxOptions>()
+            .Bind(configuration.GetSection("Outbox"))
+            .Validate(options => options.MaxRetryAttempts > 0, "Outbox MaxRetryAttempts must be greater than 0.")
+            .Validate(options => options.PollingIntervalSeconds > 0, "Outbox PollingIntervalSeconds must be greater than 0.")
+            .ValidateOnStart();
+
+        services.AddScoped<OutboxProcessor>();
+        services.AddHostedService<OutboxBackgroundService>();
 
         return services;
     }

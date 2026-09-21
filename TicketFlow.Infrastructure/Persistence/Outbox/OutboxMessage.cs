@@ -7,6 +7,8 @@ public class OutboxMessage
     public string Payload { get; private set; } = string.Empty;
     public DateTimeOffset OccurredAt { get; private set; }
     public DateTimeOffset? ProcessedAt { get; private set; }
+    public DateTimeOffset? FailedAt { get; private set; }
+    public int RetryCount { get; private set; }
 
     private OutboxMessage()
     {
@@ -19,4 +21,9 @@ public class OutboxMessage
         Payload = payload;
         OccurredAt = DateTimeOffset.UtcNow;
     }
+
+    public void MarkProcessed() => ProcessedAt ??= DateTimeOffset.UtcNow;
+    public void RecordFailure() => RetryCount++;
+    public void MarkFailed() => FailedAt ??= DateTimeOffset.UtcNow;
+    
 }
