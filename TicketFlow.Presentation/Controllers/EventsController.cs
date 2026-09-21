@@ -11,7 +11,8 @@ using TicketFlow.Application.Seats;
 using TicketFlow.Application.Seats.Commands;
 using TicketFlow.Application.Seats.Queries.GetEventSeats;
 using TicketFlow.Application.Seats.Queries.GetSeat;
-using TicketFlow.Contracts.DTOs;
+using TicketFlow.Contracts.Events;
+using TicketFlow.Contracts.Seats;
 using TicketFlow.Presentation.Mappings;
 
 namespace TicketFlow.Presentation.Controllers;

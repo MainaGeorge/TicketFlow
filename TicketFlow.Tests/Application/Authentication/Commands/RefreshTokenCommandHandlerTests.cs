@@ -2,7 +2,7 @@
 using TicketFlow.Application.Authentication.Commands.RefreshToken;
 using TicketFlow.Application.Authentication.Interfaces;
 using TicketFlow.Application.Authentication.Models;
-using TicketFlow.Contracts.DTOs;
+using TicketFlow.Contracts.Authentication;
 using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Tests.Application.Authentication.Commands;

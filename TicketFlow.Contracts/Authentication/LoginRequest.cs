@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace TicketFlow.Contracts.DTOs;
+namespace TicketFlow.Contracts.Authentication;
 
 public class LoginRequest
 {

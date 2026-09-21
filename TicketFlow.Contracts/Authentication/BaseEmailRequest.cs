@@ -1,16 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace TicketFlow.Contracts.DTOs;
-
-public class DeactivateUserRequest : BaseEmailRequest
-{
-}
-
-
-public class  ReactivateUserRequest:BaseEmailRequest
-{
-}
-
+namespace TicketFlow.Contracts.Authentication;
 
 public class BaseEmailRequest
 {

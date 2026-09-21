@@ -1,5 +1,8 @@
 ﻿using TicketFlow.Application.Bookings.Models;
-using TicketFlow.Contracts.DTOs;
+using TicketFlow.Contracts.Authentication;
+using TicketFlow.Contracts.Booking;
+using TicketFlow.Contracts.Events;
+using TicketFlow.Contracts.Seats;
 using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Presentation.Mappings;

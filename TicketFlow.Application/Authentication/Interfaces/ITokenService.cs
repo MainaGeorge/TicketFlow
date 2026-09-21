@@ -1,4 +1,4 @@
-﻿using TicketFlow.Contracts.DTOs;
+﻿using TicketFlow.Contracts.Authentication;
 using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Application.Authentication.Interfaces;

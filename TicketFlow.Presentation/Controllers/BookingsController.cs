@@ -7,7 +7,7 @@ using TicketFlow.Application.Bookings.Commands.CreateBooking;
 using TicketFlow.Application.Bookings.Models;
 using TicketFlow.Application.Bookings.Queries.GetBooking;
 using TicketFlow.Application.Bookings.Queries.GetUserBookings;
-using TicketFlow.Contracts.DTOs;
+using TicketFlow.Contracts.Booking;
 using TicketFlow.Presentation.Mappings;
 
 namespace TicketFlow.Presentation.Controllers;

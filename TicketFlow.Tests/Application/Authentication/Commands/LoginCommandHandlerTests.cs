@@ -3,7 +3,7 @@ using Moq;
 using TicketFlow.Application.Authentication.Commands.Login;
 using TicketFlow.Application.Authentication.Interfaces;
 using TicketFlow.Application.Authentication.Models;
-using TicketFlow.Contracts.DTOs;
+using TicketFlow.Contracts.Authentication;
 using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Tests.Application.Authentication.Commands;

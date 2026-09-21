@@ -1,4 +1,4 @@
-﻿using TicketFlow.Contracts.DTOs;
+﻿using TicketFlow.Contracts.Authentication;
 
 namespace TicketFlow.Application.Authentication.Models;
 

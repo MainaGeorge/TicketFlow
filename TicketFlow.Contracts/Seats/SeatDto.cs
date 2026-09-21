@@ -1,4 +1,4 @@
-﻿namespace TicketFlow.Contracts.DTOs;
+﻿namespace TicketFlow.Contracts.Seats;
 
 public class SeatDto
 {

@@ -1,4 +1,4 @@
-﻿namespace TicketFlow.Contracts.DTOs;
+﻿namespace TicketFlow.Contracts.Events;
 
 public class EventDto
 {

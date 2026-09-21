@@ -8,7 +8,7 @@ using TicketFlow.Application.Authentication.Commands.ReactivateUser;
 using TicketFlow.Application.Authentication.Commands.RefreshToken;
 using TicketFlow.Application.Authentication.Commands.Register;
 using TicketFlow.Application.Authentication.Models;
-using TicketFlow.Contracts.DTOs;
+using TicketFlow.Contracts.Authentication;
 using TicketFlow.Presentation.Mappings;
 
 namespace TicketFlow.Presentation.Controllers;

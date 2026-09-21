@@ -7,7 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using TicketFlow.Application.Authentication.Interfaces;
 using TicketFlow.Application.Common.Configurations;
-using TicketFlow.Contracts.DTOs;
+using TicketFlow.Contracts.Authentication;
 using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Infrastructure.Services;
