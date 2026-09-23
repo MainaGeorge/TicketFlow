@@ -54,6 +54,7 @@ public static class DependencyInjection
             .Bind(configuration.GetSection("Outbox"))
             .Validate(options => options.MaxRetryAttempts > 0, "Outbox MaxRetryAttempts must be greater than 0.")
             .Validate(options => options.PollingIntervalSeconds > 0, "Outbox PollingIntervalSeconds must be greater than 0.")
+            .Validate(options => options.BatchSize > 0, "Outbox BatchSize must be greater than 0.")
             .ValidateOnStart();
 
         services.AddScoped<OutboxProcessor>();

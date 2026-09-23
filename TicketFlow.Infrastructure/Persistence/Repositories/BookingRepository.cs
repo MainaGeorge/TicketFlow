@@ -9,7 +9,7 @@ using TicketFlow.Infrastructure.Persistence.Outbox;
 
 namespace TicketFlow.Infrastructure.Persistence.Repositories;
 
-internal class BookingRepository(AppDbContext context) : IBookingRepository
+public class BookingRepository(AppDbContext context) : IBookingRepository
 {
     public async Task<BookingResult?> GetBookingAsync(int bookingId, string userId, CancellationToken cancellationToken = default)
     {

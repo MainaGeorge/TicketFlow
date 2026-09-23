@@ -1,14 +1,17 @@
-﻿using Microsoft.AspNetCore.TestHost;
+﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
 using Moq;
 using System.Text.Json;
 using TicketFlow.Application.ApplicationEvents;
 using TicketFlow.Application.Messaging;
+using TicketFlow.Contracts.IntegrationEvents;
 using TicketFlow.Domain.Common;
 using TicketFlow.Domain.Events;
 using TicketFlow.Infrastructure.Persistence;
@@ -42,7 +45,7 @@ public class OutboxProcessorTests
                     services.AddScoped(_ => dispatcher.Object);
 
                     services.RemoveAll<IIntegrationEventPublisher>();
-                    services.AddScoped(_ =>  integrationEventPublisher.Object);
+                    services.AddScoped(_ => integrationEventPublisher.Object);
 
                     var outboxHostedService = services
                             .FirstOrDefault(descriptor => descriptor.ServiceType == typeof(IHostedService) && descriptor.ImplementationType == typeof(OutboxBackgroundService));
@@ -77,7 +80,7 @@ public class OutboxProcessorTests
             var registeredIntegratedEventPublisher = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IIntegrationEventPublisher>();
             var logger = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<ILogger<OutboxProcessor>>();
             var outboxProcessorOptions = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IOptions<OutboxOptions>>();
-            var processor = new OutboxProcessor(dbContext, registeredDispatcher, registeredIntegratedEventPublisher,  logger, outboxProcessorOptions);
+            var processor = new OutboxProcessor(dbContext, registeredDispatcher, registeredIntegratedEventPublisher, logger, outboxProcessorOptions);
 
             await processor.ProcessAsync(CancellationToken.None);
 
@@ -182,7 +185,7 @@ public class OutboxProcessorTests
         dispatcher
             .Setup(x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), It.IsAny<CancellationToken>()))
             .Callback
-            (   
+            (
                 (IEnumerable<IDomainEvent> events, CancellationToken _) =>
                 {
                     dispatchedEvents.Add(Assert.IsType<UserReactivateDomainEvent>(Assert.Single(events)));
@@ -332,7 +335,7 @@ public class OutboxProcessorTests
             Assert.Null(savedMessage.FailedAt);
         }
 
-        for(var i=1; i<=maxAttempts; i++)
+        for (var i = 1; i <= maxAttempts; i++)
         {
             await using (var executeOutboxProcessorScope = factory.Services.CreateAsyncScope())
             {
@@ -464,5 +467,154 @@ public class OutboxProcessorTests
         }
 
         dispatcher.Verify(x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), token), Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_WhenMessageIsIntegrationEvent_PublishesIntegrationEventAndMarksMessageProcessed()
+    {
+        var integrationEventsProcessor = new Mock<IIntegrationEventPublisher>();
+        var userId = "user-id";
+        var bookingId = 1;
+        BookingCreatedIntegrationEvent? publishedEvent = null;
+
+        integrationEventsProcessor
+            .Setup(x => x.PublishAsync(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Callback<object, CancellationToken>((message, _) =>
+            {
+                publishedEvent = Assert.IsType<BookingCreatedIntegrationEvent>(message);
+            })
+            .Returns(Task.CompletedTask);
+
+        await using var baseFactory = new CustomWebApplicationFactory();
+
+        await using var factory = baseFactory
+            .WithWebHostBuilder(builder =>
+            {
+                builder.ConfigureTestServices(services =>
+                {
+                    services.RemoveAll<IIntegrationEventPublisher>();
+                    services.AddScoped(_ => integrationEventsProcessor.Object);
+
+                    var outboxHostedService = services
+                        .FirstOrDefault(descriptor => descriptor.ServiceType == typeof(IHostedService) && descriptor.ImplementationType == typeof(OutboxBackgroundService));
+
+                    if (outboxHostedService is not null)
+                    {
+                        services.Remove(outboxHostedService);
+                    }
+                });
+            });
+
+        await using (var createOutboxMessageScope = factory.Services.CreateAsyncScope())
+        {
+            var dbContext = createOutboxMessageScope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            var integrationEvent = new BookingCreatedIntegrationEvent(bookingId, userId);
+            var message = new OutboxMessage(integrationEvent.GetType().FullName!, JsonSerializer.Serialize(integrationEvent), OutboxMessageType.IntegrationEvent);
+
+            dbContext.OutboxMessages.Add(message);
+            await dbContext.SaveChangesAsync();
+
+            var savedMessage = Assert.Single(dbContext.OutboxMessages);
+            Assert.Null(savedMessage.ProcessedAt);
+        }
+
+        await using (var executeOutboxProcessorScope = factory.Services.CreateAsyncScope())
+        {
+            var dbContext = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var registeredDispatcher = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IDomainEventDispatcher>();
+            var logger = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<ILogger<OutboxProcessor>>();
+            var outboxProcessorOptions = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IOptions<OutboxOptions>>();
+            var registeredIntegratedEventPublisher = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IIntegrationEventPublisher>();
+            var processor = new OutboxProcessor(dbContext, registeredDispatcher, registeredIntegratedEventPublisher, logger, outboxProcessorOptions);
+
+            await processor.ProcessAsync(CancellationToken.None);
+            integrationEventsProcessor.Verify(x => x.PublishAsync(It.IsAny<BookingCreatedIntegrationEvent>(), CancellationToken.None), Times.Once);
+
+            Assert.NotNull(publishedEvent);
+            Assert.Equal(bookingId, publishedEvent.BookingId);
+            Assert.Equal(userId, publishedEvent.UserId);
+        }
+
+        await using (var verificationScope = factory.Services.CreateAsyncScope())
+        {
+            var dbContext = verificationScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var message = Assert.Single(dbContext.OutboxMessages);
+
+            Assert.NotNull(message.ProcessedAt);
+            Assert.Equal(0, message.RetryCount);
+            Assert.Null(message.FailedAt);
+        }
+    }
+
+    [Fact]
+    public async Task ProcessAsync_WhenIntegrationEventPublishingFails_IncrementsRetryCountAndLeavesMessagePending()
+    {
+        var integrationEventsProcessor = new Mock<IIntegrationEventPublisher>();
+        var userId = "user-id";
+        var bookingId = 1;
+        var integrationEvent = new BookingCreatedIntegrationEvent(bookingId, userId);
+        var expectedException = new InvalidOperationException("Integration event publishing failed");
+
+        integrationEventsProcessor
+            .Setup(x => x.PublishAsync(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(expectedException);
+
+        await using var baseFactory = new CustomWebApplicationFactory();
+
+        await using var factory = baseFactory
+            .WithWebHostBuilder(builder =>
+            {
+                builder.ConfigureTestServices(services =>
+                {
+                    services.RemoveAll<IIntegrationEventPublisher>();
+                    services.AddScoped(_ => integrationEventsProcessor.Object);
+
+                    var outboxHostedService = services
+                        .FirstOrDefault(descriptor => descriptor.ServiceType == typeof(IHostedService) && descriptor.ImplementationType == typeof(OutboxBackgroundService));
+
+                    if (outboxHostedService is not null)
+                    {
+                        services.Remove(outboxHostedService);
+                    }
+                });
+            });
+
+        await using (var createOutboxMessageScope = factory.Services.CreateAsyncScope())
+        {
+            var dbContext = createOutboxMessageScope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            var message = new OutboxMessage(integrationEvent.GetType().FullName!, JsonSerializer.Serialize(integrationEvent), OutboxMessageType.IntegrationEvent);
+
+            dbContext.OutboxMessages.Add(message);
+            await dbContext.SaveChangesAsync();
+
+            var savedMessage = Assert.Single(dbContext.OutboxMessages);
+            Assert.Null(savedMessage.ProcessedAt);
+        }
+
+        await using (var executeOutboxProcessorScope = factory.Services.CreateAsyncScope())
+        {
+            var dbContext = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var registeredDispatcher = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IDomainEventDispatcher>();
+            var logger = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<ILogger<OutboxProcessor>>();
+            var outboxProcessorOptions = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IOptions<OutboxOptions>>();
+            var registeredIntegratedEventPublisher = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IIntegrationEventPublisher>();
+
+            var processor = new OutboxProcessor(dbContext, registeredDispatcher, registeredIntegratedEventPublisher, logger, outboxProcessorOptions);
+
+            await  processor.ProcessAsync(CancellationToken.None);
+            integrationEventsProcessor.Verify(x => x.PublishAsync(It.IsAny<BookingCreatedIntegrationEvent>(), CancellationToken.None), Times.Once);
+        }
+
+        await using (var verificationScope = factory.Services.CreateAsyncScope())
+        {
+            var dbContext = verificationScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var message = Assert.Single(dbContext.OutboxMessages);
+
+            Assert.Null(message.ProcessedAt);
+            Assert.Equal(1, message.RetryCount);
+            Assert.Null(message.FailedAt);
+        }
     }
 }

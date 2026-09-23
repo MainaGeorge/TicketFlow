@@ -23,7 +23,7 @@ public class OutboxProcessor(
             .Where(m => m.ProcessedAt == null && m.FailedAt == null)
             .OrderBy(m => m.OccurredAt)
             .ThenBy(m => m.Id)
-            .Take(10)
+            .Take(options.Value.BatchSize)
             .ToListAsync(cancellationToken);
 
         foreach (var message in processingBatch)
