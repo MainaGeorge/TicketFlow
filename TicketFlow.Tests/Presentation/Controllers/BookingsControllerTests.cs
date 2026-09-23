@@ -15,16 +15,16 @@ namespace TicketFlow.Tests.Presentation.Controllers;
 
 public class BookingsControllerTests
 {
-    private readonly Mock<ILogger<BookingsController>> _logger;
-    private readonly BookingsController _controller;
+    private readonly Mock<ILogger<TestController>> _logger;
+    private readonly TestController _controller;
     private readonly Mock<ISender> _sender;
 
     public BookingsControllerTests()
     {
-        _logger = new Mock<ILogger<BookingsController>>();
+        _logger = new Mock<ILogger<TestController>>();
         _sender = new Mock<ISender>();
 
-        _controller = new BookingsController(_sender.Object, _logger.Object);
+        _controller = new TestController(_sender.Object, _logger.Object);
         SetAuthenticatedUser("user-123");
     }
 
@@ -51,7 +51,7 @@ public class BookingsControllerTests
         var createdResult = Assert.IsType<CreatedAtActionResult>(result);
         var bookingCreated = Assert.IsType<BookingDto>(createdResult.Value);
 
-        Assert.Equal(nameof(BookingsController.GetBooking), createdResult.ActionName);
+        Assert.Equal(nameof(TestController.GetBooking), createdResult.ActionName);
         Assert.Equal(bookingId, createdResult.RouteValues!["id"]);
     }
 

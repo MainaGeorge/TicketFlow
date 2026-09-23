@@ -11,13 +11,13 @@ namespace TicketFlow.Tests.Infrastructure.Background;
 
 public class BookingConfirmationProcessorTests
 {
-    private readonly Mock<IProcessedBackgroundJobStore> _backgroundProcessedJobStore;
+    private readonly Mock<IProcessedJobStore> _backgroundProcessedJobStore;
     private readonly Mock<ILogger<BookingConfirmationProcessor>> _logger;
     private readonly BookingConfirmationProcessor _bookingConfrimationProcessor;
 
     public BookingConfirmationProcessorTests()
     {
-        _backgroundProcessedJobStore = new Mock<IProcessedBackgroundJobStore>();
+        _backgroundProcessedJobStore = new Mock<IProcessedJobStore>();
         _logger = new Mock<ILogger<BookingConfirmationProcessor>>();
         _bookingConfrimationProcessor = new BookingConfirmationProcessor(_backgroundProcessedJobStore.Object, _logger.Object);
     }
@@ -68,7 +68,7 @@ public class BookingConfirmationProcessorTests
 
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var backgroundProcessedJobStore = new ProcessedBackgroundJobStore(context);
+        var backgroundProcessedJobStore = new ProcessedJobStore(context);
 
         var idempotencyKey = $"BookingConfirmation:{Guid.NewGuid()}";
 
@@ -86,7 +86,7 @@ public class BookingConfirmationProcessorTests
         await using var scope = factory.Services.CreateAsyncScope();
 
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var backgroundProcessedJobStore = new ProcessedBackgroundJobStore(context);
+        var backgroundProcessedJobStore = new ProcessedJobStore(context);
 
         await backgroundProcessedJobStore.MarkProcessedAsync(idempotencyKey, CancellationToken.None);
         var exists = await backgroundProcessedJobStore.ExistsAsync(idempotencyKey, CancellationToken.None);

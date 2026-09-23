@@ -4,7 +4,7 @@ using TicketFlow.Application.Background;
 namespace TicketFlow.Infrastructure.Background;
 
 public class BookingConfirmationProcessor(
-        IProcessedBackgroundJobStore processedJobStore, 
+        IProcessedJobStore processedJobStore, 
         ILogger<BookingConfirmationProcessor> logger) 
     : IBookingConfirmationProcessor
 {
@@ -20,8 +20,8 @@ public class BookingConfirmationProcessor(
 
         logger.LogInformation("Processing booking confirmation for Booking {BookingId}, User {UserId}", work.BookingId, work.UserId);
 
-        // Simulating some work getting done for the time being
-        await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
+        //place holder for the work to be done
+        await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
 
         await processedJobStore.MarkProcessedAsync(idempotencyKey, cancellationToken);
 

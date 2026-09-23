@@ -5,14 +5,20 @@ namespace TicketFlow.Infrastructure.Persistence.Outbox;
 
 public sealed class OutboxMessageFactory
 {
-    public static OutboxMessage Create(IDomainEvent domainEvent)
+    public static OutboxMessage CreateDomainEvent(IDomainEvent domainEvent) 
+        => Create(domainEvent, OutboxMessageType.DomainEvent);
+
+    public static OutboxMessage CreateIntegrationEvent(object integrationEvent) 
+        => Create(integrationEvent, OutboxMessageType.IntegrationEvent);
+
+    private static OutboxMessage Create(object message, OutboxMessageType messageType)
     {
-        var eventType = domainEvent.GetType();
+        var type = message.GetType();
 
-        var payload = JsonSerializer.Serialize(domainEvent, eventType);
+        var payload = JsonSerializer.Serialize(message, type);
 
-        var type = eventType.FullName ?? throw new InvalidOperationException("Domain event type must have a full name.");
+        var typeName = type.FullName ?? throw new InvalidOperationException("Outbox message type must have a full name.");
 
-        return new OutboxMessage(type, payload);
+        return new OutboxMessage(typeName, payload, messageType);
     }
 }

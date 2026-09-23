@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using System.Text.Json;
 using TicketFlow.Application.ApplicationEvents;
+using TicketFlow.Application.Messaging;
 using TicketFlow.Domain.Common;
 using TicketFlow.Domain.Events;
 using TicketFlow.Infrastructure.Persistence;
@@ -22,6 +23,7 @@ public class OutboxProcessorTests
     public async Task ProcessAsync_WhenMessageExists_DispatchesEventAndPersistsOutboxMessageProcessedAt()
     {
         var dispatcher = new Mock<IDomainEventDispatcher>();
+        var integrationEventPublisher = new Mock<IIntegrationEventPublisher>();
         IReadOnlyCollection<IDomainEvent> domainEvents = [];
 
         dispatcher
@@ -29,13 +31,18 @@ public class OutboxProcessorTests
             .Callback((IEnumerable<IDomainEvent> events, CancellationToken ct) => domainEvents = [.. events])
             .Returns(Task.CompletedTask);
 
-        var factory = new CustomWebApplicationFactory()
+        await using var baseFactory = new CustomWebApplicationFactory();
+
+        await using var factory = baseFactory
             .WithWebHostBuilder(builder =>
             {
                 builder.ConfigureTestServices(services =>
                 {
                     services.RemoveAll<IDomainEventDispatcher>();
                     services.AddScoped(_ => dispatcher.Object);
+
+                    services.RemoveAll<IIntegrationEventPublisher>();
+                    services.AddScoped(_ =>  integrationEventPublisher.Object);
 
                     var outboxHostedService = services
                             .FirstOrDefault(descriptor => descriptor.ServiceType == typeof(IHostedService) && descriptor.ImplementationType == typeof(OutboxBackgroundService));
@@ -53,7 +60,7 @@ public class OutboxProcessorTests
             var dbContext = createOutboxMessageScope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             var domainEvent = new UserReactivateDomainEvent("user-123");
-            var message = new OutboxMessage(domainEvent.GetType().FullName!, JsonSerializer.Serialize(domainEvent));
+            var message = new OutboxMessage(domainEvent.GetType().FullName!, JsonSerializer.Serialize(domainEvent), OutboxMessageType.DomainEvent);
 
             dbContext.OutboxMessages.Add(message);
             await dbContext.SaveChangesAsync();
@@ -67,9 +74,10 @@ public class OutboxProcessorTests
         {
             var dbContext = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<AppDbContext>();
             var registeredDispatcher = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IDomainEventDispatcher>();
+            var registeredIntegratedEventPublisher = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IIntegrationEventPublisher>();
             var logger = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<ILogger<OutboxProcessor>>();
             var outboxProcessorOptions = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IOptions<OutboxOptions>>();
-            var processor = new OutboxProcessor(dbContext, registeredDispatcher, logger, outboxProcessorOptions);
+            var processor = new OutboxProcessor(dbContext, registeredDispatcher, registeredIntegratedEventPublisher,  logger, outboxProcessorOptions);
 
             await processor.ProcessAsync(CancellationToken.None);
 
@@ -94,18 +102,24 @@ public class OutboxProcessorTests
     {
         var expectedException = new InvalidOperationException("Dispatch failed");
         var dispatcher = new Mock<IDomainEventDispatcher>();
+        var integrationEventPublisher = new Mock<IIntegrationEventPublisher>();
 
         dispatcher
             .Setup(x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(expectedException);
 
-        var factory = new CustomWebApplicationFactory()
+        await using var baseFactory = new CustomWebApplicationFactory();
+
+        await using var factory = baseFactory
             .WithWebHostBuilder(builder =>
             {
                 builder.ConfigureTestServices(services =>
                 {
                     services.RemoveAll<IDomainEventDispatcher>();
                     services.AddScoped(_ => dispatcher.Object);
+
+                    services.RemoveAll<IIntegrationEventPublisher>();
+                    services.AddScoped(_ => integrationEventPublisher.Object);
 
                     var outboxHostedService = services
                         .FirstOrDefault(descriptor => descriptor.ServiceType == typeof(IHostedService) && descriptor.ImplementationType == typeof(OutboxBackgroundService));
@@ -122,7 +136,7 @@ public class OutboxProcessorTests
             var dbContext = createOutboxMessageScope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             var domainEvent = new UserReactivateDomainEvent("user-123");
-            var message = new OutboxMessage(domainEvent.GetType().FullName!, JsonSerializer.Serialize(domainEvent));
+            var message = new OutboxMessage(domainEvent.GetType().FullName!, JsonSerializer.Serialize(domainEvent), OutboxMessageType.DomainEvent);
 
             dbContext.OutboxMessages.Add(message);
             await dbContext.SaveChangesAsync();
@@ -137,7 +151,8 @@ public class OutboxProcessorTests
             var registeredDispatcher = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IDomainEventDispatcher>();
             var logger = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<ILogger<OutboxProcessor>>();
             var outboxProcessorOptions = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IOptions<OutboxOptions>>();
-            var processor = new OutboxProcessor(dbContext, registeredDispatcher, logger, outboxProcessorOptions);
+            var registeredIntegratedEventPublisher = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IIntegrationEventPublisher>();
+            var processor = new OutboxProcessor(dbContext, registeredDispatcher, registeredIntegratedEventPublisher, logger, outboxProcessorOptions);
 
             await processor.ProcessAsync(CancellationToken.None);
             dispatcher.Verify(x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), CancellationToken.None), Times.Once);
@@ -157,6 +172,7 @@ public class OutboxProcessorTests
     {
         var expectedException = new InvalidOperationException("Dispatch failed");
         var dispatcher = new Mock<IDomainEventDispatcher>();
+        var integrationEventPublisher = new Mock<IIntegrationEventPublisher>();
         var dispatchedEvents = new List<UserReactivateDomainEvent>();
         var dispatchCount = 0;
         Guid firstId;
@@ -184,13 +200,18 @@ public class OutboxProcessorTests
                 }
             );
 
-        var factory = new CustomWebApplicationFactory()
+        await using var baseFactory = new CustomWebApplicationFactory();
+
+        await using var factory = baseFactory
             .WithWebHostBuilder(builder =>
             {
                 builder.ConfigureTestServices(services =>
                 {
                     services.RemoveAll<IDomainEventDispatcher>();
                     services.AddScoped(_ => dispatcher.Object);
+
+                    services.RemoveAll<IIntegrationEventPublisher>();
+                    services.AddScoped(_ => integrationEventPublisher.Object);
 
                     var outboxHostedService = services
                         .FirstOrDefault(descriptor => descriptor.ServiceType == typeof(IHostedService) && descriptor.ImplementationType == typeof(OutboxBackgroundService));
@@ -208,7 +229,7 @@ public class OutboxProcessorTests
             var dbContext = createOutboxMessageScope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             var domainEventList = new List<UserReactivateDomainEvent> { new("user-123"), new("user-456"), new("user-789") };
-            var messages = domainEventList.Select(c => new OutboxMessage(c.GetType().FullName!, JsonSerializer.Serialize(c))).ToList();
+            var messages = domainEventList.Select(c => new OutboxMessage(c.GetType().FullName!, JsonSerializer.Serialize(c), OutboxMessageType.DomainEvent)).ToList();
 
             dbContext.OutboxMessages.AddRange(messages);
             await dbContext.SaveChangesAsync();
@@ -228,7 +249,8 @@ public class OutboxProcessorTests
             var registeredDispatcher = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IDomainEventDispatcher>();
             var logger = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<ILogger<OutboxProcessor>>();
             var outboxProcessorOptions = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IOptions<OutboxOptions>>();
-            var processor = new OutboxProcessor(dbContext, registeredDispatcher, logger, outboxProcessorOptions);
+            var registeredIntegratedEventPublisher = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IIntegrationEventPublisher>();
+            var processor = new OutboxProcessor(dbContext, registeredDispatcher, registeredIntegratedEventPublisher, logger, outboxProcessorOptions);
 
             await processor.ProcessAsync(CancellationToken.None);
             Assert.Equal(3, dispatchedEvents.Count);
@@ -260,18 +282,24 @@ public class OutboxProcessorTests
         var maxAttempts = 3;
         var expectedException = new InvalidOperationException("Dispatch failed");
         var dispatcher = new Mock<IDomainEventDispatcher>();
+        var integrationEventPublisher = new Mock<IIntegrationEventPublisher>();
 
         dispatcher
             .Setup(x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(expectedException);
 
-        var factory = new CustomWebApplicationFactory()
+        await using var baseFactory = new CustomWebApplicationFactory();
+
+        await using var factory = baseFactory
             .WithWebHostBuilder(builder =>
             {
                 builder.ConfigureTestServices(services =>
                 {
                     services.RemoveAll<IDomainEventDispatcher>();
                     services.AddScoped(_ => dispatcher.Object);
+
+                    services.RemoveAll<IIntegrationEventPublisher>();
+                    services.AddScoped(_ => integrationEventPublisher.Object);
 
                     // we need to remove the hosted service, so for testing only our manully instantiated processor does the processing
                     var outboxHostedService = services
@@ -294,7 +322,7 @@ public class OutboxProcessorTests
             var dbContext = createOutboxMessageScope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             var domainEvent = new UserReactivateDomainEvent("user-123");
-            var message = new OutboxMessage(domainEvent.GetType().FullName!, JsonSerializer.Serialize(domainEvent));
+            var message = new OutboxMessage(domainEvent.GetType().FullName!, JsonSerializer.Serialize(domainEvent), OutboxMessageType.DomainEvent);
 
             dbContext.OutboxMessages.Add(message);
             await dbContext.SaveChangesAsync();
@@ -312,7 +340,8 @@ public class OutboxProcessorTests
                 var registeredDispatcher = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IDomainEventDispatcher>();
                 var logger = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<ILogger<OutboxProcessor>>();
                 var outboxProcessorOptions = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IOptions<OutboxOptions>>();
-                var processor = new OutboxProcessor(dbContext, registeredDispatcher, logger, outboxProcessorOptions);
+                var registeredIntegratedEventPublisher = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IIntegrationEventPublisher>();
+                var processor = new OutboxProcessor(dbContext, registeredDispatcher, registeredIntegratedEventPublisher, logger, outboxProcessorOptions);
 
                 await processor.ProcessAsync(CancellationToken.None);
             }
@@ -338,7 +367,8 @@ public class OutboxProcessorTests
             var registeredDispatcher = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IDomainEventDispatcher>();
             var logger = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<ILogger<OutboxProcessor>>();
             var outboxProcessorOptions = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IOptions<OutboxOptions>>();
-            var processor = new OutboxProcessor(dbContext, registeredDispatcher, logger, outboxProcessorOptions);
+            var registeredIntegratedEventPublisher = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IIntegrationEventPublisher>();
+            var processor = new OutboxProcessor(dbContext, registeredDispatcher, registeredIntegratedEventPublisher, logger, outboxProcessorOptions);
 
             await processor.ProcessAsync(CancellationToken.None);
         }
@@ -361,6 +391,7 @@ public class OutboxProcessorTests
     public async Task ProcessAsync_WhenCancellationIsRequested_PropagatesCancellationWithoutRecordingFailure()
     {
         var dispatcher = new Mock<IDomainEventDispatcher>();
+        var integrationEventPublisher = new Mock<IIntegrationEventPublisher>();
         using var cancellationSource = new CancellationTokenSource();
         var token = cancellationSource.Token;
 
@@ -372,13 +403,18 @@ public class OutboxProcessorTests
                 return Task.FromCanceled(token);
             });
 
-        var factory = new CustomWebApplicationFactory()
+        await using var baseFactory = new CustomWebApplicationFactory();
+
+        await using var factory = baseFactory
             .WithWebHostBuilder(builder =>
             {
                 builder.ConfigureTestServices(services =>
                 {
                     services.RemoveAll<IDomainEventDispatcher>();
                     services.AddScoped(_ => dispatcher.Object);
+
+                    services.RemoveAll<IIntegrationEventPublisher>();
+                    services.AddScoped(_ => integrationEventPublisher.Object);
 
                     var outboxHostedService = services
                         .FirstOrDefault(descriptor => descriptor.ServiceType == typeof(IHostedService) && descriptor.ImplementationType == typeof(OutboxBackgroundService));
@@ -395,7 +431,7 @@ public class OutboxProcessorTests
             var dbContext = createOutboxMessageScope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             var domainEvent = new UserReactivateDomainEvent("user-123");
-            var message = new OutboxMessage(domainEvent.GetType().FullName!, JsonSerializer.Serialize(domainEvent));
+            var message = new OutboxMessage(domainEvent.GetType().FullName!, JsonSerializer.Serialize(domainEvent), OutboxMessageType.DomainEvent);
 
             dbContext.OutboxMessages.Add(message);
             await dbContext.SaveChangesAsync();
@@ -411,7 +447,8 @@ public class OutboxProcessorTests
             var registeredDispatcher = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IDomainEventDispatcher>();
             var logger = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<ILogger<OutboxProcessor>>();
             var outboxProcessorOptions = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IOptions<OutboxOptions>>();
-            var processor = new OutboxProcessor(dbContext, registeredDispatcher, logger, outboxProcessorOptions);
+            var registeredIntegratedEventPublisher = executeOutboxProcessorScope.ServiceProvider.GetRequiredService<IIntegrationEventPublisher>();
+            var processor = new OutboxProcessor(dbContext, registeredDispatcher, registeredIntegratedEventPublisher, logger, outboxProcessorOptions);
 
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => processor.ProcessAsync(token));
         }

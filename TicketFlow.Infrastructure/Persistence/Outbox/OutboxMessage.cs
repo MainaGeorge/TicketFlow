@@ -5,6 +5,7 @@ public class OutboxMessage
     public Guid Id { get; private set; }
     public string Type { get; private set; } = string.Empty;
     public string Payload { get; private set; } = string.Empty;
+    public OutboxMessageType MessageType { get; private set; }
     public DateTimeOffset OccurredAt { get; private set; }
     public DateTimeOffset? ProcessedAt { get; private set; }
     public DateTimeOffset? FailedAt { get; private set; }
@@ -14,12 +15,13 @@ public class OutboxMessage
     {
     }
 
-    public OutboxMessage(string type, string payload)
+    public OutboxMessage(string type, string payload, OutboxMessageType messageType)
     {
         Id = Guid.NewGuid();
         Type = type;
         Payload = payload;
         OccurredAt = DateTimeOffset.UtcNow;
+        MessageType = messageType;
     }
 
     public void MarkProcessed() => ProcessedAt ??= DateTimeOffset.UtcNow;

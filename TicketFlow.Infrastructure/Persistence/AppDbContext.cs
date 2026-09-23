@@ -19,7 +19,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         var entitiesWithDomainEvents = GetEntitiesWithDomainEvents();
-        var outboxMessages = entitiesWithDomainEvents.SelectMany(entity => entity.DomainEvents).Select(OutboxMessageFactory.Create).ToList();
+        var outboxMessages = entitiesWithDomainEvents.SelectMany(entity => entity.DomainEvents).Select(OutboxMessageFactory.CreateDomainEvent).ToList();
         
         OutboxMessages.AddRange(outboxMessages);
         var saveChangesResult = await base.SaveChangesAsync(cancellationToken);

@@ -5,7 +5,7 @@ using TicketFlow.Infrastructure.Persistence;
 
 namespace TicketFlow.Infrastructure.Background;
 
-public class ProcessedBackgroundJobStore(AppDbContext context) : IProcessedBackgroundJobStore
+public class ProcessedJobStore(AppDbContext context) : IProcessedJobStore
 {
     public async Task<bool> ExistsAsync(string idempotencyKey, CancellationToken cancellationToken = default)
     {

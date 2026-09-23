@@ -28,7 +28,9 @@ public class OutboxBackgroundServiceTests
             .Callback(() => messageDispatched.TrySetResult())
             .Returns(Task.CompletedTask);
 
-        var factory = new CustomWebApplicationFactory()
+        await using var baseFactory = new CustomWebApplicationFactory();
+
+        await using var factory = baseFactory
             .WithWebHostBuilder(builder =>
             {
                 builder.ConfigureTestServices(services =>
@@ -50,7 +52,7 @@ public class OutboxBackgroundServiceTests
         {
             var dbContext = createMessageScope.ServiceProvider.GetRequiredService<AppDbContext>();
             var domainEvent = new UserReactivateDomainEvent("user-123");
-            var message = new OutboxMessage(domainEvent.GetType().FullName!, JsonSerializer.Serialize(domainEvent));
+            var message = new OutboxMessage(domainEvent.GetType().FullName!, JsonSerializer.Serialize(domainEvent), OutboxMessageType.DomainEvent);
 
             dbContext.OutboxMessages.Add(message);
 

@@ -1,6 +1,5 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Logging;
-using TicketFlow.Application.ApplicationEvents.BookingCreated;
 using TicketFlow.Application.Bookings.Exceptions;
 using TicketFlow.Application.Bookings.Interfaces;
 using TicketFlow.Application.Bookings.Models;
@@ -12,7 +11,6 @@ namespace TicketFlow.Application.Bookings.Commands.CreateBooking;
 public sealed class CreateBookingCommandHandler(
     IBookingRepository bookingRepository,
     IEventsRepository eventsRepository,
-    IPublisher publisher,
     ILogger<CreateBookingCommandHandler> logger) : IRequestHandler<CreateBookingCommand, BookingBaseResult>
 {
     public async Task<BookingBaseResult> Handle(CreateBookingCommand command, CancellationToken cancellationToken)
@@ -47,13 +45,9 @@ public sealed class CreateBookingCommandHandler(
 
         var booking = Booking.Create(command.UserId, command.SeatId, DateTime.UtcNow);
 
-        await bookingRepository.AddAsync(booking, cancellationToken);
-
         try
         {
-            await bookingRepository.SaveChangesAsync(command.SeatId, cancellationToken);
-
-            await publisher.Publish(new BookingCreatedEvent(booking.Id, command.UserId), cancellationToken);
+            await bookingRepository.SaveCreatedBookingAsync(booking, cancellationToken);
 
             return new BookingCreated(booking.Id, booking.SeatId, booking.UserId, booking.CreatedAt);
         }

@@ -1,7 +1,5 @@
-﻿using MediatR;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Moq;
-using TicketFlow.Application.ApplicationEvents.BookingCreated;
 using TicketFlow.Application.Bookings.Commands.CreateBooking;
 using TicketFlow.Application.Bookings.Interfaces;
 using TicketFlow.Application.Bookings.Models;
@@ -13,7 +11,6 @@ namespace TicketFlow.Tests.Application.Bookings.Commands.CreateBooking;
 public class CreateBookingCommandHandlerTests
 {
     private readonly Mock<ILogger<CreateBookingCommandHandler>> _logger;
-    private readonly Mock<IPublisher> _publisher;
     private readonly Mock<IBookingRepository> _bookingRepository;
     private readonly Mock<IEventsRepository> _eventRepository;
     private readonly CreateBookingCommandHandler _commandHandler;
@@ -21,11 +18,10 @@ public class CreateBookingCommandHandlerTests
     public CreateBookingCommandHandlerTests()
     {
         _logger = new Mock<ILogger<CreateBookingCommandHandler>>();
-        _publisher = new Mock<IPublisher>();
         _bookingRepository = new Mock<IBookingRepository>();
         _eventRepository = new Mock<IEventsRepository>();
 
-        _commandHandler = new CreateBookingCommandHandler(_bookingRepository.Object, _eventRepository.Object, _publisher.Object, _logger.Object);
+        _commandHandler = new CreateBookingCommandHandler(_bookingRepository.Object, _eventRepository.Object, _logger.Object);
     }
 
 
@@ -51,29 +47,19 @@ public class CreateBookingCommandHandlerTests
             .ReturnsAsync(@event);
 
         _bookingRepository
-            .Setup(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-
-        _bookingRepository
-            .Setup(x => x.AddAsync(It.IsAny<Booking>(), It.IsAny<CancellationToken>()))
-            .Callback<Booking, CancellationToken>((booking, _) => createdBooking = booking)
+            .Setup(x => x.SaveCreatedBookingAsync(It.IsAny<Booking>(), It.IsAny<CancellationToken>()))
+            .Callback((Booking b, CancellationToken _) => createdBooking = b)
             .Returns(Task.CompletedTask);
 
         _bookingRepository
             .Setup(x => x.GetSeatForBookingAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(seat);
 
-        _publisher
-            .Setup(x => x.Publish(It.IsAny<BookingCreatedEvent>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-
         var result = await _commandHandler.Handle(command, CancellationToken.None);
 
         _eventRepository.Verify(x => x.GetEventAsync(eventId, CancellationToken.None), Times.Once);
         _bookingRepository.Verify(x => x.GetSeatForBookingAsync(eventId, seatId, CancellationToken.None), Times.Once);
-        _bookingRepository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == userId && b.SeatId == seatId), It.IsAny<CancellationToken>()), Times.Once);
-        _bookingRepository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
-        _publisher.Verify(x => x.Publish(It.Is<BookingCreatedEvent>(e => e.BookingId == createdBooking!.Id && e.UserId == createdBooking.UserId), CancellationToken.None), Times.Once);
+        _bookingRepository.Verify(x => x.SaveCreatedBookingAsync(It.Is<Booking>(e => e.Id == createdBooking!.Id && e.UserId == createdBooking.UserId), It.IsAny<CancellationToken>()), Times.Once);
 
         Assert.IsType<BookingCreated>(result);
         Assert.NotNull(createdBooking);
@@ -108,16 +94,9 @@ public class CreateBookingCommandHandlerTests
             .ReturnsAsync(seat);
 
         _bookingRepository
-            .Setup(x => x.AddAsync(It.IsAny<Booking>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.SaveCreatedBookingAsync(It.IsAny<Booking>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        _bookingRepository
-            .Setup(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-
-        _publisher
-            .Setup(x => x.Publish(It.IsAny<BookingCreatedEvent>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
 
         await _commandHandler.Handle(command, cancellationToken);
 
@@ -125,11 +104,7 @@ public class CreateBookingCommandHandlerTests
 
         _bookingRepository.Verify(x => x.GetSeatForBookingAsync(eventId, seatId, cancellationToken), Times.Once);
 
-        _bookingRepository.Verify(x => x.AddAsync(It.IsAny<Booking>(), cancellationToken), Times.Once);
-
-        _bookingRepository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), cancellationToken), Times.Once);
-
-        _publisher.Verify(x => x.Publish(It.IsAny<BookingCreatedEvent>(), cancellationToken), Times.Once);
+        _bookingRepository.Verify(x => x.SaveCreatedBookingAsync(It.IsAny<Booking>(), cancellationToken), Times.Once);
     }
 
     [Fact]
@@ -153,14 +128,13 @@ public class CreateBookingCommandHandlerTests
         var exception = new InvalidOperationException("Database unavailable");
 
         _bookingRepository
-            .Setup(x => x.AddAsync(It.IsAny<Booking>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.SaveCreatedBookingAsync(It.IsAny<Booking>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(exception);
 
         var result = await Assert.ThrowsAsync<InvalidOperationException>(
             () => _commandHandler.Handle(bookingCommand, CancellationToken.None));
 
-        _publisher.Verify(x => x.Publish(It.IsAny<BookingCreatedEvent>(), It.IsAny<CancellationToken>()), Times.Never);
-        _bookingRepository.Verify(x => x.SaveChangesAsync(seatId, CancellationToken.None), Times.Never);
+        _bookingRepository.Verify(x => x.SaveCreatedBookingAsync(It.IsAny<Booking>(), CancellationToken.None), Times.Once);
         _bookingRepository.Verify(x => x.GetSeatForBookingAsync(eventId, seatId, CancellationToken.None), Times.Once);
         _eventRepository.Verify(x => x.GetEventAsync(eventId, CancellationToken.None), Times.Once);
 
@@ -185,9 +159,7 @@ public class CreateBookingCommandHandlerTests
 
         var result = await _commandHandler.Handle(new CreateBookingCommand(eventId, seatId, userId), CancellationToken.None);
         _eventRepository.Verify(x => x.GetEventAsync(eventId, CancellationToken.None), Times.Once);
-        _bookingRepository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == userId && b.SeatId == seatId), It.IsAny<CancellationToken>()), Times.Never);
-        _bookingRepository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
-        _publisher.Verify(x => x.Publish(It.IsAny<BookingCreatedEvent>(), It.IsAny<CancellationToken>()), Times.Never);
+        _bookingRepository.Verify(x => x.SaveCreatedBookingAsync(It.IsAny<Booking>(), It.IsAny<CancellationToken>()), Times.Never);
 
         Assert.IsType<BookingSeatNotFound>(result);
     }
@@ -212,9 +184,7 @@ public class CreateBookingCommandHandlerTests
         var result = await _commandHandler.Handle(new CreateBookingCommand(1, seat.Id, userId), CancellationToken.None);
 
         _eventRepository.Verify(x => x.GetEventAsync(eventId, CancellationToken.None), Times.Once);
-        _bookingRepository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == userId && b.SeatId == seat.Id), It.IsAny<CancellationToken>()), Times.Never);
-        _bookingRepository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
-        _publisher.Verify(x => x.Publish(It.IsAny<BookingCreatedEvent>(), It.IsAny<CancellationToken>()), Times.Never);
+        _bookingRepository.Verify(x => x.SaveCreatedBookingAsync(It.IsAny<Booking>(), It.IsAny<CancellationToken>()), Times.Never);
 
         Assert.IsType<BookingSeatAlreadyBooked>(result);
     }
@@ -238,10 +208,8 @@ public class CreateBookingCommandHandlerTests
 
         var result = await _commandHandler.Handle(new CreateBookingCommand(1, seat.Id, userId), CancellationToken.None);
 
-        _bookingRepository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == userId && b.SeatId == seat.Id), It.IsAny<CancellationToken>()), Times.Never);
         _eventRepository.Verify(x => x.GetEventAsync(eventId, CancellationToken.None), Times.Once);
-        _bookingRepository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
-        _publisher.Verify(x => x.Publish(It.IsAny<BookingCreatedEvent>(), It.IsAny<CancellationToken>()), Times.Never);
+        _bookingRepository.Verify(x => x.SaveCreatedBookingAsync(It.IsAny<Booking>(), It.IsAny<CancellationToken>()), Times.Never);
 
         Assert.IsType<BookingEventUnavailable>(result);
     }
@@ -251,7 +219,6 @@ public class CreateBookingCommandHandlerTests
     {
         var seatId = 1;
         var eventId = 1;
-        Booking? createdBooking = null;
         var message = "something went wrong while persisting the booking";
         var exception = new InvalidOperationException(message);
         var userId = Guid.NewGuid().ToString();
@@ -263,29 +230,19 @@ public class CreateBookingCommandHandlerTests
             .ReturnsAsync(@event);
 
         _bookingRepository
-            .Setup(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.SaveCreatedBookingAsync(It.IsAny<Booking>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(exception);
-
-        _bookingRepository
-            .Setup(x => x.AddAsync(It.IsAny<Booking>(), It.IsAny<CancellationToken>()))
-            .Callback<Booking, CancellationToken>((booking, _) => createdBooking = booking)
-            .Returns(Task.CompletedTask);
 
         _bookingRepository
             .Setup(x => x.GetSeatForBookingAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(seat);
 
-        _publisher
-            .Setup(x => x.Publish(It.IsAny<BookingCreatedEvent>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
 
         var result = await Assert.ThrowsAsync<InvalidOperationException>(() => _commandHandler.Handle(new CreateBookingCommand(1, seatId, userId), CancellationToken.None));
         Assert.Equal(message, result.Message);
 
         _eventRepository.Verify(x => x.GetEventAsync(eventId, CancellationToken.None), Times.Once);
-        _bookingRepository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == userId && b.SeatId == seatId), It.IsAny<CancellationToken>()), Times.Once);
-        _bookingRepository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
-        _publisher.Verify(x => x.Publish(It.IsAny<BookingCreatedEvent>(), CancellationToken.None), Times.Never);
+        _bookingRepository.Verify(x => x.SaveCreatedBookingAsync(It.IsAny<Booking>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -303,10 +260,7 @@ public class CreateBookingCommandHandlerTests
 
         Assert.IsType<BookingEventNotFound>(result);
         _eventRepository.Verify(x => x.GetEventAsync(eventId, CancellationToken.None), Times.Once);
-        _bookingRepository.Verify(x => x.AddAsync(It.IsAny<Booking>(), It.IsAny<CancellationToken>()), Times.Never);
-        _bookingRepository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
-        _publisher.Verify(x => x.Publish(It.IsAny<BookingCreatedEvent>(), CancellationToken.None), Times.Never);
-
+        _bookingRepository.Verify(x => x.SaveCreatedBookingAsync(It.IsAny<Booking>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -333,9 +287,7 @@ public class CreateBookingCommandHandlerTests
         Assert.IsType<BookingSeatNotFound>(result);
 
         _eventRepository.Verify(x => x.GetEventAsync(eventId, CancellationToken.None), Times.Once);
-        _bookingRepository.Verify(x => x.AddAsync(It.Is<Booking>(b => b.UserId == userId), It.IsAny<CancellationToken>()), Times.Never);
-        _bookingRepository.Verify(x => x.SaveChangesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
-        _publisher.Verify(x => x.Publish(It.IsAny<BookingCreatedEvent>(), It.IsAny<CancellationToken>()), Times.Never);
+        _bookingRepository.Verify(x => x.SaveCreatedBookingAsync(It.IsAny<Booking>(), It.IsAny<CancellationToken>()), Times.Never);
 
         Assert.IsType<BookingSeatNotFound>(result);
     }

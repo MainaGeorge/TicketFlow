@@ -3,17 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using TicketFlow.Application.Bookings.Exceptions;
 using TicketFlow.Application.Bookings.Interfaces;
 using TicketFlow.Application.Bookings.Models;
+using TicketFlow.Contracts.IntegrationEvents;
 using TicketFlow.Domain.Entities;
+using TicketFlow.Infrastructure.Persistence.Outbox;
 
 namespace TicketFlow.Infrastructure.Persistence.Repositories;
 
 internal class BookingRepository(AppDbContext context) : IBookingRepository
 {
-    public async Task AddAsync(Booking booking, CancellationToken cancellationToken = default)
-    {
-        await context.Bookings.AddAsync(booking, cancellationToken);
-    }
-
     public async Task<BookingResult?> GetBookingAsync(int bookingId, string userId, CancellationToken cancellationToken = default)
     {
         return await context
@@ -42,15 +39,32 @@ internal class BookingRepository(AppDbContext context) : IBookingRepository
             .ToListAsync(cancellationToken: cancellationToken);
     }
 
-    public async Task SaveChangesAsync(int seatId, CancellationToken cancellationToken = default)
+    public async Task SaveCreatedBookingAsync(Booking booking, CancellationToken cancellationToken = default)
     {
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+
         try
         {
+            await context.Bookings.AddAsync(booking, cancellationToken);
             await context.SaveChangesAsync(cancellationToken);
+
+            var integrationEvent = new BookingCreatedIntegrationEvent(booking.Id, booking.UserId);
+            var outboxMessage = OutboxMessageFactory.CreateIntegrationEvent(integrationEvent);
+
+            context.OutboxMessages.Add(outboxMessage);
+            await context.SaveChangesAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
         }
         catch (DbUpdateException ex) when (ex.InnerException is SqlException sql && sql.Number is 2601 or 2627)
         {
-            throw new SeatAlreadyBookedException(seatId);
+            await transaction.RollbackAsync(cancellationToken);
+            throw new SeatAlreadyBookedException(booking.SeatId);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
         }
     }
 }

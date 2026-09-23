@@ -16,7 +16,7 @@ namespace TicketFlow.Presentation.Controllers;
 [Authorize]
 [ApiVersion("1.0")]
 [ApiController]
-public class BookingsController(ISender sender, ILogger<BookingsController> logger) : ControllerBase
+public class TestController(ISender sender, ILogger<TestController> logger) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> CreateBooking([FromBody] CreateBookingRequest bookingRequest, CancellationToken cancellationToken)

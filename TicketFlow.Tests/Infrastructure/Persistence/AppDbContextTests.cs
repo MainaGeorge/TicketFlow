@@ -2,9 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
 using System.Text.Json;
-using TicketFlow.Application.ApplicationEvents;
 using TicketFlow.Application.Authentication.Commands.ReactivateUser;
 using TicketFlow.Application.Authentication.Models;
 using TicketFlow.Domain.Entities;
@@ -19,7 +17,7 @@ public class AppDbContextTests
     [Fact]
     public async Task SaveChangesAsync_WhenEntityHasDomainEvents_PersistsOutboxMessage()
     {
-        var factory = new CustomWebApplicationFactory();
+        await using var factory = new CustomWebApplicationFactory();
         using var source = new CancellationTokenSource();
         var token = source.Token;
         string? userId = null;
@@ -78,8 +76,7 @@ public class AppDbContextTests
     {
         using var source = new CancellationTokenSource();
         var token = source.Token;
-        var dispatcher = new Mock<IDomainEventDispatcher>();
-        var factory = new CustomWebApplicationFactory();
+        await using var factory = new CustomWebApplicationFactory();
 
         await using var scope = factory.Services.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
