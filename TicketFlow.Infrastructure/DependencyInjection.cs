@@ -67,7 +67,14 @@ public static class DependencyInjection
     {
         services.AddMassTransit(configurator =>
         {
-            configurator.AddConsumer<BookingConfirmationConsumer>();
+            configurator.AddConsumer<BookingConfirmationConsumer>(consumer =>
+            {
+                consumer.UseMessageRetry(retry =>
+                {
+                    retry.Interval(retryCount: 3, interval: TimeSpan.FromSeconds(2));
+                });
+            });
+
             configurator.UsingRabbitMq((context, rabbitMq) =>
             {
                 rabbitMq.Host(

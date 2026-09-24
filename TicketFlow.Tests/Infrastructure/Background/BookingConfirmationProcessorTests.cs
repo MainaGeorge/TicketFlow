@@ -74,7 +74,7 @@ public class BookingConfirmationProcessorTests
 
         await backgroundProcessedJobStore.MarkProcessedAsync(idempotencyKey, CancellationToken.None);
 
-        await Assert.ThrowsAsync<DbUpdateException>(() => backgroundProcessedJobStore.MarkProcessedAsync(idempotencyKey,  CancellationToken.None));
+        await Assert.ThrowsAsync<DbUpdateException>(() => backgroundProcessedJobStore.MarkProcessedAsync(idempotencyKey, CancellationToken.None));
     }
 
     [Fact]
@@ -96,5 +96,61 @@ public class BookingConfirmationProcessorTests
         Assert.True(exists);
         Assert.NotNull(processedJob);
         Assert.Equal(idempotencyKey, processedJob.IdempotencyKey);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_WhenBookingConfirmationWasAlreadyProcessed_DoesNotProcessAgain()
+    {
+        var processedJobStore = new Mock<IProcessedJobStore>();
+        var logger = new Mock<ILogger<BookingConfirmationProcessor>>();
+
+        var userId = "user-id";
+        var bookingId = 1;
+        var idempotencyKey = $"BookingConfirmation:{bookingId}";
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = cancellationTokenSource.Token;
+
+        var bookingConfirmationWork = new BookingConfirmationWork(bookingId, userId);
+
+        processedJobStore
+            .Setup(x => x.ExistsAsync(idempotencyKey, cancellationToken))
+            .ReturnsAsync(true);
+
+        var bookingConfirmationProcessor = new BookingConfirmationProcessor(processedJobStore.Object, logger.Object);
+
+        await bookingConfirmationProcessor.ProcessAsync(bookingConfirmationWork, cancellationToken);
+
+        processedJobStore.Verify(x => x.ExistsAsync(idempotencyKey, cancellationToken), Times.Once);
+        processedJobStore.Verify(x => x.MarkProcessedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_WhenBookingConfirmationHasNotBeenProcessed_MarksAsProcessed()
+    {
+        var processedJobStore = new Mock<IProcessedJobStore>();
+        var logger = new Mock<ILogger<BookingConfirmationProcessor>>();
+
+        var userId = "user-id";
+        var bookingId = 1;
+        var idempotencyKey = $"BookingConfirmation:{bookingId}";
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = cancellationTokenSource.Token;
+
+        var bookingConfirmationWork = new BookingConfirmationWork(bookingId, userId);
+
+        processedJobStore
+            .Setup(x => x.ExistsAsync(idempotencyKey, cancellationToken))
+            .ReturnsAsync(false);
+
+        processedJobStore
+            .Setup(x => x.MarkProcessedAsync(idempotencyKey, cancellationToken))
+            .Returns(Task.CompletedTask);
+
+        var bookingConfirmationProcessor = new BookingConfirmationProcessor(processedJobStore.Object, logger.Object);
+
+        await bookingConfirmationProcessor.ProcessAsync(bookingConfirmationWork, cancellationToken);
+
+        processedJobStore.Verify(x => x.ExistsAsync(idempotencyKey, cancellationToken), Times.Once);
+        processedJobStore.Verify(x => x.MarkProcessedAsync(idempotencyKey, cancellationToken), Times.Once);
     }
 }

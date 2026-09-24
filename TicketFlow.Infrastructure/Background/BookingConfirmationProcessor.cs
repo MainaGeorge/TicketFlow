@@ -20,9 +20,9 @@ public class BookingConfirmationProcessor(
 
         logger.LogInformation("Processing booking confirmation for Booking {BookingId}, User {UserId}", work.BookingId, work.UserId);
 
-        //place holder for the work to be done
-        await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
+        //place holder for the work to be done here.
 
+        // mark the work as processed here
         await processedJobStore.MarkProcessedAsync(idempotencyKey, cancellationToken);
 
         logger.LogInformation("Booking confirmation processed for Booking {BookingId}", work.BookingId);
