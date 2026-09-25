@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using TicketFlow.Application.Abstractions;
 using TicketFlow.Application.Authentication.Interfaces;
 using TicketFlow.Application.Background;
 using TicketFlow.Application.Bookings.Interfaces;
@@ -11,6 +12,7 @@ using TicketFlow.Application.Messaging;
 using TicketFlow.Application.Seats.Interfaces;
 using TicketFlow.Domain.Entities;
 using TicketFlow.Infrastructure.Background;
+using TicketFlow.Infrastructure.Caching;
 using TicketFlow.Infrastructure.Messaging.Consumers;
 using TicketFlow.Infrastructure.Messaging.Publishers;
 using TicketFlow.Infrastructure.Persistence;
@@ -31,6 +33,22 @@ public static class DependencyInjection
         services.AddOutbox(configuration);
         services.AddMassTransit(configuration);
         services.AddScoped<IIntegrationEventPublisher, MassTransitIntegrationEventPublisher>();
+        services.AddRedis(configuration);
+
+        return services;
+    }
+
+    private static IServiceCollection AddRedis(this IServiceCollection services, IConfiguration configuration)
+    {
+        var redisConnectionString = configuration["Redis:ConnectionString"] ?? throw new InvalidOperationException("Redis:ConnectionString is not configured.");
+        services.AddScoped<ICacheService, RedisCacheService>();
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.ConfigurationOptions =StackExchange.Redis.ConfigurationOptions.Parse(redisConnectionString);
+            options.ConfigurationOptions.ConnectTimeout = 1000;
+            options.ConfigurationOptions.SyncTimeout = 1000;
+            options.ConfigurationOptions.AsyncTimeout = 1000;
+        });
 
         return services;
     }
