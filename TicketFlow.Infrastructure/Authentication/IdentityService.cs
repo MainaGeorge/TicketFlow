@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using TicketFlow.Application.Authentication.Interfaces;
+using TicketFlow.Application.Abstractions.Authentication;
 using TicketFlow.Application.Authentication.Models;
 using TicketFlow.Domain.Entities;
 using IdentityError = TicketFlow.Application.Authentication.Models.IdentityError;

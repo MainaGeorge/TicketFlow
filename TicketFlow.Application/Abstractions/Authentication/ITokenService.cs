@@ -1,7 +1,7 @@
 ﻿using TicketFlow.Contracts.Authentication;
 using TicketFlow.Domain.Entities;
 
-namespace TicketFlow.Application.Authentication.Interfaces;
+namespace TicketFlow.Application.Abstractions.Authentication;
 
 public interface ITokenService
 {

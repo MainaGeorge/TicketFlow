@@ -1,5 +1,5 @@
 ﻿using Moq;
-using TicketFlow.Application.Bookings.Interfaces;
+using TicketFlow.Application.Abstractions.Repositories;
 using TicketFlow.Application.Bookings.Models;
 using TicketFlow.Application.Bookings.Queries.GetBooking;
 using TicketFlow.Domain.Entities;

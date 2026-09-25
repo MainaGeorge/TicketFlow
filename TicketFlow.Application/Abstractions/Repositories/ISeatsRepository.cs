@@ -1,6 +1,6 @@
 ﻿using TicketFlow.Domain.Entities;
 
-namespace TicketFlow.Application.Seats.Interfaces;
+namespace TicketFlow.Application.Abstractions.Repositories;
 
 public interface ISeatsRepository
 {

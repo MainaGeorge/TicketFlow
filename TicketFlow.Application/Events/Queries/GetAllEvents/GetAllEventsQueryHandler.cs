@@ -1,5 +1,5 @@
 ﻿using MediatR;
-using TicketFlow.Application.Events.Interfaces;
+using TicketFlow.Application.Abstractions.Repositories;
 using TicketFlow.Application.Events.Models;
 
 namespace TicketFlow.Application.Events.Queries.GetAllEvents;

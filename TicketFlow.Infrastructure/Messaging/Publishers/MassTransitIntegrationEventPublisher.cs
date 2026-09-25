@@ -1,5 +1,5 @@
 ﻿using MassTransit;
-using TicketFlow.Application.Messaging;
+using TicketFlow.Application.Abstractions.Messaging;
 
 namespace TicketFlow.Infrastructure.Messaging.Publishers;
 

@@ -1,6 +1,6 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Logging;
-using TicketFlow.Application.Authentication.Interfaces;
+using TicketFlow.Application.Abstractions.Authentication;
 using TicketFlow.Application.Authentication.Models;
 
 namespace TicketFlow.Application.Authentication.Commands.Register;

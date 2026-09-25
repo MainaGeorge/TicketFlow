@@ -1,6 +1,7 @@
 ﻿using Moq;
+using TicketFlow.Application.Abstractions.Authentication;
+using TicketFlow.Application.Abstractions.Repositories;
 using TicketFlow.Application.Authentication.Commands.RefreshToken;
-using TicketFlow.Application.Authentication.Interfaces;
 using TicketFlow.Application.Authentication.Models;
 using TicketFlow.Contracts.Authentication;
 using TicketFlow.Domain.Entities;

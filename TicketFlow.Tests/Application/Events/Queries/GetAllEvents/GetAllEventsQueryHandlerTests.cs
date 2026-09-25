@@ -1,5 +1,5 @@
 ﻿using Moq;
-using TicketFlow.Application.Events.Interfaces;
+using TicketFlow.Application.Abstractions.Repositories;
 using TicketFlow.Application.Events.Models;
 using TicketFlow.Application.Events.Queries.GetAllEvents;
 using TicketFlow.Domain.Entities;

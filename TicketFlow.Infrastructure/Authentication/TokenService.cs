@@ -5,7 +5,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using TicketFlow.Application.Authentication.Interfaces;
+using TicketFlow.Application.Abstractions.Authentication;
 using TicketFlow.Application.Common.Configurations;
 using TicketFlow.Contracts.Authentication;
 using TicketFlow.Domain.Entities;

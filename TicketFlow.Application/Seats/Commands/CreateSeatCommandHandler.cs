@@ -1,7 +1,6 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Logging;
-using TicketFlow.Application.Events.Interfaces;
-using TicketFlow.Application.Seats.Interfaces;
+using TicketFlow.Application.Abstractions.Repositories;
 using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Application.Seats.Commands;

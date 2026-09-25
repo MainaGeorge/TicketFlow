@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
 using System.Text.Json;
-using TicketFlow.Application.Abstractions;
+using TicketFlow.Application.Abstractions.Caching;
 
 namespace TicketFlow.Infrastructure.Caching;
 

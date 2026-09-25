@@ -2,8 +2,8 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
+using TicketFlow.Application.Abstractions.Messaging;
 using TicketFlow.Application.ApplicationEvents;
-using TicketFlow.Application.Messaging;
 using TicketFlow.Contracts.IntegrationEvents;
 using TicketFlow.Domain.Common;
 

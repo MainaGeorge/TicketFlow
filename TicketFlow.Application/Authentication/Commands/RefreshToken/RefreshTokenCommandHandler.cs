@@ -1,5 +1,6 @@
 ﻿using MediatR;
-using TicketFlow.Application.Authentication.Interfaces;
+using TicketFlow.Application.Abstractions.Authentication;
+using TicketFlow.Application.Abstractions.Repositories;
 using TicketFlow.Application.Authentication.Models;
 
 namespace TicketFlow.Application.Authentication.Commands.RefreshToken;

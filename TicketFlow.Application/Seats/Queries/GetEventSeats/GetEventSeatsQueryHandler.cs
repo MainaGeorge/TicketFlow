@@ -1,5 +1,5 @@
 ﻿using MediatR;
-using TicketFlow.Application.Seats.Interfaces;
+using TicketFlow.Application.Abstractions.Repositories;
 
 namespace TicketFlow.Application.Seats.Queries.GetEventSeats;
 

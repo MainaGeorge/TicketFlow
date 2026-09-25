@@ -1,4 +1,4 @@
-﻿namespace TicketFlow.Application.Messaging;
+﻿namespace TicketFlow.Application.Abstractions.Messaging;
 
 public interface IIntegrationEventPublisher
 {

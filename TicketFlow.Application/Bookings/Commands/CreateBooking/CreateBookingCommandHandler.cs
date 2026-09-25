@@ -1,9 +1,8 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Logging;
+using TicketFlow.Application.Abstractions.Repositories;
 using TicketFlow.Application.Bookings.Exceptions;
-using TicketFlow.Application.Bookings.Interfaces;
 using TicketFlow.Application.Bookings.Models;
-using TicketFlow.Application.Events.Interfaces;
 using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Application.Bookings.Commands.CreateBooking;

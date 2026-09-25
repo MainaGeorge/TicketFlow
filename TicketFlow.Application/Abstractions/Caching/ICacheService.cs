@@ -1,4 +1,4 @@
-﻿namespace TicketFlow.Application.Abstractions;
+﻿namespace TicketFlow.Application.Abstractions.Caching;
 
 public interface ICacheService
 {

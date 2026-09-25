@@ -1,9 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
-using TicketFlow.Application.Events.Interfaces;
+using TicketFlow.Application.Abstractions.Repositories;
 using TicketFlow.Application.Seats;
 using TicketFlow.Application.Seats.Commands;
-using TicketFlow.Application.Seats.Interfaces;
 using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Tests.Application.Seats.Commands;

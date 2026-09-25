@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
+using TicketFlow.Application.Abstractions.Repositories;
 using TicketFlow.Application.Events.Commands.CreateEvent;
-using TicketFlow.Application.Events.Interfaces;
 using TicketFlow.Application.Events.Models;
 using TicketFlow.Domain.Entities;
 

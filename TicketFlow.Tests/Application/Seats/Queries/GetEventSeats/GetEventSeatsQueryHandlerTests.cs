@@ -1,5 +1,5 @@
 ﻿using Moq;
-using TicketFlow.Application.Seats.Interfaces;
+using TicketFlow.Application.Abstractions.Repositories;
 using TicketFlow.Application.Seats.Queries.GetEventSeats;
 using TicketFlow.Domain.Entities;
 

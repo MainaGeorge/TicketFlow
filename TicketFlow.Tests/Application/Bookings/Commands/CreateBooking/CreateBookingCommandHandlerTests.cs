@@ -1,9 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
+using TicketFlow.Application.Abstractions.Repositories;
 using TicketFlow.Application.Bookings.Commands.CreateBooking;
-using TicketFlow.Application.Bookings.Interfaces;
 using TicketFlow.Application.Bookings.Models;
-using TicketFlow.Application.Events.Interfaces;
 using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Tests.Application.Bookings.Commands.CreateBooking;

@@ -1,5 +1,5 @@
 ﻿using MediatR;
-using TicketFlow.Application.Bookings.Interfaces;
+using TicketFlow.Application.Abstractions.Repositories;
 using TicketFlow.Application.Bookings.Models;
 
 namespace TicketFlow.Application.Bookings.Queries.GetBooking;

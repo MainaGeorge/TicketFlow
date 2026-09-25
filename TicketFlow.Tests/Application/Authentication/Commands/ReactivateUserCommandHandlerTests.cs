@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
+using TicketFlow.Application.Abstractions.Authentication;
 using TicketFlow.Application.Authentication.Commands.ReactivateUser;
-using TicketFlow.Application.Authentication.Interfaces;
 using TicketFlow.Application.Authentication.Models;
 using TicketFlow.Domain.Entities;
 

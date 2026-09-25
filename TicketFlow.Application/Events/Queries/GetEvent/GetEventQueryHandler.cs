@@ -1,7 +1,7 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Logging;
-using TicketFlow.Application.Abstractions;
-using TicketFlow.Application.Events.Interfaces;
+using TicketFlow.Application.Abstractions.Caching;
+using TicketFlow.Application.Abstractions.Repositories;
 using TicketFlow.Application.Events.Models;
 
 namespace TicketFlow.Application.Events.Queries.GetEvent;
