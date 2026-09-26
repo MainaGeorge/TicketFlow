@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using System.Net.Http.Json;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace TicketFlow.Tests.Integration;
 
@@ -24,7 +25,19 @@ public class SeatEndpointsTests
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
         var eventId = await CreateEvent(factory, client);
-        var response = await client.PostAsJsonAsync($"/api/events/{eventId}/seats", new { row = "A", number = 1, price = 50 });
+        var payload = new
+        {
+            seats = new[]
+            {
+                new
+                {
+                    row = "A",
+                    number = 1,
+                    price = 50m
+                }
+            }
+        };
+        var response = await client.PostAsJsonAsync($"/api/events/{eventId}/seats", payload);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
 
@@ -34,7 +47,19 @@ public class SeatEndpointsTests
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
         var eventId = await CreateEvent(factory, client);
-        var response = await client.PostAsJsonAsync($"/api/events/{eventId}/seats", new { row = "A", number = 0, price = 50 });
+        var payload = new
+        {
+            seats = new[]
+            {
+                new
+                {
+                    row = "A",
+                    number = 0,
+                    price = 50m
+                }
+            }
+        };
+        var response = await client.PostAsJsonAsync($"/api/events/{eventId}/seats", payload);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -44,7 +69,19 @@ public class SeatEndpointsTests
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
         var eventId = await CreateEvent(factory, client);
-        var response = await client.PostAsJsonAsync($"/api/events/{eventId}/seats", new { row = "A", number = -1, price = 50 });
+        var payload = new
+        {
+            seats = new[]
+            {
+                new
+                {
+                    row = "A",
+                    number = -1,
+                    price = 50m
+                }
+            }
+        };
+        var response = await client.PostAsJsonAsync($"/api/events/{eventId}/seats", payload);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -54,7 +91,19 @@ public class SeatEndpointsTests
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
         var eventId = await CreateEvent(factory, client);
-        var response = await client.PostAsJsonAsync($"/api/events/{eventId}/seats", new { row = "A", number = 1, price = -10 });
+        var payload = new
+        {
+            seats = new[]
+            {
+                new
+                {
+                    row = "",
+                    number = 1,
+                    price = -50m
+                }
+            }
+        };
+        var response = await client.PostAsJsonAsync($"/api/events/{eventId}/seats", payload);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -64,7 +113,19 @@ public class SeatEndpointsTests
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
         var eventId = await CreateEvent(factory, client);
-        var response = await client.PostAsJsonAsync($"/api/events/{eventId}/seats", new { row = "", number = 1, price = 50 });
+        var payload = new
+        {
+            seats = new[]
+            {
+                new
+                {
+                    row = "",
+                    number = 1,
+                    price = 50m
+                }
+            }
+        };
+        var response = await client.PostAsJsonAsync($"/api/events/{eventId}/seats", payload);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -75,7 +136,19 @@ public class SeatEndpointsTests
         using var client = factory.CreateClient();
         var token = await TestHelpers.RegisterAndLoginAsAdmin(factory, client, "test@user.com");
         TestHelpers.SetBearerToken(client, token);
-        var response = await client.PostAsJsonAsync("/api/events/999999/seats", new { row = "A", number = 1, price = 50 });
+        var payload = new
+        {
+            seats = new[]
+            {
+                new
+                {
+                    row = "A",
+                    number = 1,
+                    price = 50m
+                }
+            }
+        };
+        var response = await client.PostAsJsonAsync("/api/events/999999/seats", payload);
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
@@ -85,7 +158,19 @@ public class SeatEndpointsTests
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
         var eventId = await CreateEvent(factory, client);
-        var response = await client.PostAsJsonAsync($"/api/events/{eventId}/seats", new { row = "A", number = 1, price = 0m });
+        var payload = new
+        {
+            seats = new[]
+            {
+                new
+                {
+                    row = "A",
+                    number = 1,
+                    price = 0m
+                }
+            }
+        };
+        var response = await client.PostAsJsonAsync($"/api/events/{eventId}/seats", payload);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
@@ -93,8 +178,8 @@ public class SeatEndpointsTests
 
         Assert.NotNull(problemDetails);
         Assert.Equal(StatusCodes.Status400BadRequest, problemDetails.Status);
-        Assert.True(problemDetails.Errors.ContainsKey("Price"));
-        Assert.NotEmpty(problemDetails.Errors["Price"]);
+        Assert.True(problemDetails.Errors.ContainsKey("Seats[0].Price"));
+        Assert.NotEmpty(problemDetails.Errors["Seats[0].Price"]);
     }
 
     private sealed class EventResponse

@@ -8,8 +8,8 @@ using TicketFlow.Application.Events.Commands.CreateEvent;
 using TicketFlow.Application.Events.Models;
 using TicketFlow.Application.Events.Queries.GetAllEvents;
 using TicketFlow.Application.Events.Queries.GetEvent;
-using TicketFlow.Application.Seats;
 using TicketFlow.Application.Seats.Commands;
+using TicketFlow.Application.Seats.Models;
 using TicketFlow.Application.Seats.Queries.GetEventSeats;
 using TicketFlow.Application.Seats.Queries.GetSeat;
 using TicketFlow.Contracts.Events;
@@ -94,7 +94,8 @@ public class EventsController(ISender sender, ILogger<EventsController> logger) 
     }
 
     [HttpPost("{eventId:int}/seats")]
-    public async Task<IActionResult> CreateSeat(int eventId, [FromBody] CreateSeatRequest request, CancellationToken cancellationToken)
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<IActionResult> CreateSeat(int eventId, [FromBody] CreateSeatsRequest request, CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -111,12 +112,12 @@ public class EventsController(ISender sender, ILogger<EventsController> logger) 
             });
         }
 
-        var createSeatCommand = new CreateSeatCommand(eventId, request.Row, request.Number!.Value, request.Price!.Value);
-        var createdSeat = await sender.Send(createSeatCommand, cancellationToken);
+        var command = new CreateSeatsCommand(eventId, request.Seats.Select(s => new CreateSeatItem(s.Row, s.Number!.Value, s.Price!.Value)).ToList());
+        var createdSeat = await sender.Send(command, cancellationToken);
 
         return createdSeat switch
         {
-            SeatCreatedResult result => CreatedAtAction(nameof(GetSeat), new { eventId = eventId, seatId = result.Seat!.Id }, result.Seat.MapToSeatDto()),
+            SeatsCreatedResult result => CreatedAtAction(nameof(GetSeats), new { eventId }, result.Seats.Select(s => s.MapToSeatDto())),
             EventNotFoundForSeatResult => NotFound(new ProblemDetails
             {
                 Status = StatusCodes.Status404NotFound,

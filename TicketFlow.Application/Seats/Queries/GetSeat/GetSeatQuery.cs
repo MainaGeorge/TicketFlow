@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using TicketFlow.Application.Seats.Models;
 
 namespace TicketFlow.Application.Seats.Queries.GetSeat;
 

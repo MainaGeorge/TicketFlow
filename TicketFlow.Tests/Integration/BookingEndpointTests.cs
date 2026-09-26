@@ -54,10 +54,22 @@ public class BookingEndpointTests
         var eventResponse2 = await client.PostAsJsonAsync("api/events", new { name = "Test Sports Concert", venue = "Test Arena", eventDate = DateTime.UtcNow.AddDays(30) });
         var eventDto1 = await eventResponse1.Content.ReadFromJsonAsync<EventResponse>();
         var eventDto2 = await eventResponse2.Content.ReadFromJsonAsync<EventResponse>();
-        var seatResponse = await client.PostAsJsonAsync($"/api/events/{eventDto1!.Id}/seats", new { row = "A", number = 1, price = 50 });
+        var payload = new
+        {
+            seats = new[]
+            {
+                new
+                {
+                    row = "A",
+                    number = 1,
+                    price = 50m
+                }
+            }
+        };
+        var seatResponse = await client.PostAsJsonAsync($"/api/events/{eventDto1!.Id}/seats", payload);
         seatResponse.EnsureSuccessStatusCode();
-        var seatDto = await seatResponse.Content.ReadFromJsonAsync<SeatResponse>();
-        var response = await client.PostAsJsonAsync("/api/bookings", new { eventId = eventDto2!.Id, seatId = seatDto!.Id });
+        var seatsDto = await seatResponse.Content.ReadFromJsonAsync<List<SeatDto>>();
+        var response = await client.PostAsJsonAsync("/api/bookings", new { eventId = eventDto2!.Id, seatId = seatsDto!.First().Id });
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
@@ -208,11 +220,23 @@ public class BookingEndpointTests
         eventResponse.EnsureSuccessStatusCode();
         var eventDto = await eventResponse.Content.ReadFromJsonAsync<EventResponse>() ?? throw new InvalidOperationException("Event was not returned.");
 
-        var seatResponse = await client.PostAsJsonAsync($"/api/events/{eventDto.Id}/seats", new { row = "A", number = 1, price = 50 });
+        var payload = new
+        {
+            seats = new[]
+            {
+                new
+                {
+                    row = "A",
+                    number = 1,
+                    price = 50m
+                }
+            }
+        };
+        var seatResponse = await client.PostAsJsonAsync($"/api/events/{eventDto.Id}/seats", payload);
         seatResponse.EnsureSuccessStatusCode();
-        var seatDto = await seatResponse.Content.ReadFromJsonAsync<SeatResponse>();
+        var seatDto = await seatResponse.Content.ReadFromJsonAsync<List<SeatDto>>();
 
-        return seatDto == null ? throw new InvalidOperationException("Seat was not returned.") : ((string Token, int EventId, int SeatId))(token, eventDto.Id, seatDto.Id);
+        return seatDto!.Count == 0 ? throw new InvalidOperationException("Seat was not returned.") : ((string Token, int EventId, int SeatId))(token, eventDto.Id, seatDto[0].Id);
     }
 
 
@@ -221,12 +245,10 @@ public class BookingEndpointTests
         public int Id { get; set; }
     }
 
-
-    private sealed class SeatResponse
+    private sealed class SeatDto
     {
         public int Id { get; set; }
     }
-
 
     private sealed class BookingResponse
     {

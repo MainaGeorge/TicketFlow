@@ -18,7 +18,7 @@ using TicketFlow.Infrastructure.Persistence;
 using TicketFlow.Infrastructure.Persistence.Outbox;
 using TicketFlow.Tests.Integration;
 
-namespace TicketFlow.Tests.Infrastructure.Persistence;
+namespace TicketFlow.Tests.Integration.Persistence;
 
 public class OutboxProcessorTests
 {

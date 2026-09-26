@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using TicketFlow.Application.Abstractions.Repositories;
+using TicketFlow.Application.Seats.Models;
 
 namespace TicketFlow.Application.Seats.Queries.GetSeat;
 

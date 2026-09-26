@@ -7,8 +7,8 @@ using System.Security.Claims;
 using TicketFlow.Application.Events.Commands.CreateEvent;
 using TicketFlow.Application.Events.Models;
 using TicketFlow.Application.Events.Queries.GetEvent;
-using TicketFlow.Application.Seats;
 using TicketFlow.Application.Seats.Commands;
+using TicketFlow.Application.Seats.Models;
 using TicketFlow.Application.Seats.Queries.GetEventSeats;
 using TicketFlow.Application.Seats.Queries.GetSeat;
 using TicketFlow.Contracts.Booking;
@@ -164,12 +164,11 @@ public class EventsControllerTests
     {
         _controller.ControllerContext = new ControllerContext {  HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity()) }  };
 
-        var request = new CreateSeatRequest { Row = "A", Number = 1, Price = 200 };
-
+        var request = new CreateSeatsRequest { Seats = [new CreateSeatRequest { Number = 1, Price = 200, Row = "A" }]  };
         var result = await _controller.CreateSeat(1, request, CancellationToken.None);
 
         Assert.IsType<UnauthorizedObjectResult>(result);
-        _sender.Verify(x => x.Send(It.IsAny<CreateSeatCommand>(), It.IsAny<CancellationToken>()), Times.Never());
+        _sender.Verify(x => x.Send(It.IsAny<CreateSeatsCommand>(), It.IsAny<CancellationToken>()), Times.Never());
     }
 
     [Fact]
@@ -178,28 +177,27 @@ public class EventsControllerTests
         var seatId = 100;
         var eventId = 4;
 
-        _sender.Setup(x => x.Send(It.IsAny<CreateSeatCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SeatCreatedResult(new Seat { Id = seatId }));
+        _sender.Setup(x => x.Send(It.IsAny<CreateSeatsCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SeatsCreatedResult([new Seat { Id = seatId }]));
 
-        var request = new CreateSeatRequest { Row = "A", Number = 1, Price = 200 };
+        var request = new CreateSeatsRequest { Seats = [new CreateSeatRequest { Number = 1, Price = 200, Row = "A" }] };
+
 
         var result = await _controller.CreateSeat(eventId, request, CancellationToken.None);
 
         var created = Assert.IsType<CreatedAtActionResult>(result);
-        Assert.Equal(nameof(EventsController.GetSeat), created.ActionName);
+        Assert.Equal(nameof(EventsController.GetSeats), created.ActionName);
         Assert.Equal(4, created.RouteValues!["eventId"]);
-        Assert.Equal(100, created.RouteValues!["seatId"]);
     }
 
     [Fact]
     public async Task CratedSeat_WhenEventNotExists_Returns404()
     {
         _sender
-            .Setup(x => x.Send(It.IsAny<CreateSeatCommand>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.Send(It.IsAny<CreateSeatsCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new EventNotFoundForSeatResult());
 
-        var request = new CreateSeatRequest { Row = "A", Number = 1, Price = 200 };
-
+        var request = new CreateSeatsRequest { Seats = [new CreateSeatRequest { Number = 1, Price = 200, Row = "A" }] };
         var result = await _controller.CreateSeat(1, request, CancellationToken.None);
         var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
         var problem = Assert.IsType<ProblemDetails>(notFoundResult.Value);

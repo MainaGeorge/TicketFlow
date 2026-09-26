@@ -8,9 +8,8 @@ using TicketFlow.Application.Authentication.Models;
 using TicketFlow.Domain.Entities;
 using TicketFlow.Domain.Events;
 using TicketFlow.Infrastructure.Persistence;
-using TicketFlow.Tests.Integration;
 
-namespace TicketFlow.Tests.Infrastructure.Persistence;
+namespace TicketFlow.Tests.Integration.Persistence;
 
 public class AppDbContextTests
 {

@@ -8,9 +8,8 @@ using TicketFlow.Domain.Entities;
 using TicketFlow.Infrastructure.Persistence;
 using TicketFlow.Infrastructure.Persistence.Outbox;
 using TicketFlow.Infrastructure.Persistence.Repositories;
-using TicketFlow.Tests.Integration;
 
-namespace TicketFlow.Tests.Infrastructure.Persistence.Repositories;
+namespace TicketFlow.Tests.Integration.Persistence.Repositories;
 
 public class BookingRepositoryTests
 {

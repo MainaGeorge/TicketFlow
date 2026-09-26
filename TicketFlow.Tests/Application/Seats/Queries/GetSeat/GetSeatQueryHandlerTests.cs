@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
 using TicketFlow.Application.Abstractions.Repositories;
-using TicketFlow.Application.Seats;
+using TicketFlow.Application.Seats.Models;
 using TicketFlow.Application.Seats.Queries.GetSeat;
 using TicketFlow.Domain.Entities;
 
