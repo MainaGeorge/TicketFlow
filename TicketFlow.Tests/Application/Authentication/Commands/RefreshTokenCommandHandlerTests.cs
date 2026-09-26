@@ -11,6 +11,7 @@ namespace TicketFlow.Tests.Application.Authentication.Commands;
 public class RefreshTokenCommandHandlerTests
 {
     private readonly Mock<ITokenService> _tokenService;
+    private readonly Mock<IIdentityService> _identityService;
     private readonly Mock<IRefreshTokenRepository> _refreshTokenRepository;
     private readonly RefreshTokenCommandHandler _handler;
 
@@ -18,7 +19,8 @@ public class RefreshTokenCommandHandlerTests
     {
         _tokenService = new Mock<ITokenService>();
         _refreshTokenRepository = new Mock<IRefreshTokenRepository>();
-        _handler = new RefreshTokenCommandHandler(_refreshTokenRepository.Object, _tokenService.Object);
+        _identityService = new Mock<IIdentityService>();
+        _handler = new RefreshTokenCommandHandler(_refreshTokenRepository.Object, _identityService.Object, _tokenService.Object);
     }
 
     [Fact]
@@ -47,7 +49,7 @@ public class RefreshTokenCommandHandlerTests
             .Returns(Task.CompletedTask);
 
         _tokenService
-            .Setup(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(tokenResponse);
 
         var refreshTokenCommand = new RefreshTokenCommand(oldRefreshToken);
@@ -58,7 +60,7 @@ public class RefreshTokenCommandHandlerTests
         _refreshTokenRepository.Verify(x => x.GetByTokenAsync(oldRefreshToken, CancellationToken.None), Times.Once);
         _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Once);
         _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _tokenService.Verify(x => x.GenerateTokensAsync(user, CancellationToken.None), Times.Once);
+        _tokenService.Verify(x => x.GenerateTokensAsync(user, It.IsAny<IEnumerable<string>>(), CancellationToken.None), Times.Once);
     }
 
     [Fact]
@@ -89,7 +91,7 @@ public class RefreshTokenCommandHandlerTests
             .Returns(Task.CompletedTask);
 
         _tokenService
-            .Setup(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(tokenResponse);
 
         var refreshTokenCommand = new RefreshTokenCommand(oldRefreshToken);
@@ -99,7 +101,7 @@ public class RefreshTokenCommandHandlerTests
         _refreshTokenRepository.Verify(x => x.GetByTokenAsync(oldRefreshToken, token), Times.Once);
         _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), token), Times.Once);
         _refreshTokenRepository.Verify(x => x.SaveChangesAsync(token), Times.Once);
-        _tokenService.Verify(x => x.GenerateTokensAsync(user, token), Times.Once);
+        _tokenService.Verify(x => x.GenerateTokensAsync(user, It.IsAny<IEnumerable<string>>(), token), Times.Once);
     }
 
     [Fact]
@@ -134,7 +136,7 @@ public class RefreshTokenCommandHandlerTests
             .ReturnsAsync(oldRefreshToken);
 
         _tokenService
-            .Setup(x => x.GenerateTokensAsync(oldRefreshToken.User, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GenerateTokensAsync(oldRefreshToken.User, It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(newTokenResponse);
 
         RefreshToken? replacementToken = null;
@@ -161,7 +163,7 @@ public class RefreshTokenCommandHandlerTests
         Assert.Equal(oldRefreshToken.UserId, replacementToken.UserId);
 
         _refreshTokenRepository.Verify(x => x.GetByTokenAsync(oldRefreshToken.Token, CancellationToken.None), Times.Once);
-        _tokenService.Verify(x => x.GenerateTokensAsync(oldRefreshToken.User, CancellationToken.None), Times.Once);
+        _tokenService.Verify(x => x.GenerateTokensAsync(oldRefreshToken.User, It.IsAny<IEnumerable<string>>(), CancellationToken.None), Times.Once);
         _refreshTokenRepository.Verify(x => x.SaveChangesAsync(CancellationToken.None), Times.Once);
 
         _refreshTokenRepository.Verify(
@@ -201,7 +203,7 @@ public class RefreshTokenCommandHandlerTests
        
         Assert.IsType<RefreshTokenInvalid>(result);
 
-        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -233,7 +235,7 @@ public class RefreshTokenCommandHandlerTests
 
         Assert.IsType<RefreshTokenInvalid>(result);
 
-        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -251,7 +253,7 @@ public class RefreshTokenCommandHandlerTests
 
         Assert.IsType<RefreshTokenInvalid>(result);
 
-        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -280,7 +282,7 @@ public class RefreshTokenCommandHandlerTests
 
         Assert.IsType<RefreshTokenInvalid>(result);
 
-        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -317,7 +319,7 @@ public class RefreshTokenCommandHandlerTests
 
         Assert.IsType<RefreshTokenInvalid>(result);
 
-        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -349,7 +351,7 @@ public class RefreshTokenCommandHandlerTests
             .ThrowsAsync(exception);
 
         _tokenService
-            .Setup(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(tokenResponse);
 
         var refreshTokenCommand = new RefreshTokenCommand(oldRefreshToken);
@@ -360,7 +362,7 @@ public class RefreshTokenCommandHandlerTests
         _refreshTokenRepository.Verify(x => x.GetByTokenAsync(oldRefreshToken, CancellationToken.None), Times.Once);
         _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Once);
         _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _tokenService.Verify(x => x.GenerateTokensAsync(user, CancellationToken.None), Times.Once);
+        _tokenService.Verify(x => x.GenerateTokensAsync(user, It.IsAny<IEnumerable<string>>(), CancellationToken.None), Times.Once);
     }
 
     [Fact]
@@ -386,7 +388,7 @@ public class RefreshTokenCommandHandlerTests
             .ThrowsAsync(exception);
 
         _tokenService
-            .Setup(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(tokenResponse);
 
         var refreshTokenCommand = new RefreshTokenCommand(oldRefreshToken);
@@ -397,7 +399,7 @@ public class RefreshTokenCommandHandlerTests
         _refreshTokenRepository.Verify(x => x.GetByTokenAsync(oldRefreshToken, CancellationToken.None), Times.Once);
         _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Once);
         _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
-        _tokenService.Verify(x => x.GenerateTokensAsync(user, CancellationToken.None), Times.Once);
+        _tokenService.Verify(x => x.GenerateTokensAsync(user, It.IsAny<IEnumerable<string>>(), CancellationToken.None), Times.Once);
     }
 
     [Fact]
@@ -419,7 +421,7 @@ public class RefreshTokenCommandHandlerTests
             .ReturnsAsync(refreshToken);
 
         _tokenService
-            .Setup(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(exception);
 
         var refreshTokenCommand = new RefreshTokenCommand(oldRefreshToken);
@@ -430,7 +432,7 @@ public class RefreshTokenCommandHandlerTests
         _refreshTokenRepository.Verify(x => x.GetByTokenAsync(oldRefreshToken, CancellationToken.None), Times.Once);
         _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
-        _tokenService.Verify(x => x.GenerateTokensAsync(user, CancellationToken.None), Times.Once);
+        _tokenService.Verify(x => x.GenerateTokensAsync(user, It.IsAny<IEnumerable<string>>(), CancellationToken.None), Times.Once);
     }
 
     [Fact]
@@ -459,6 +461,6 @@ public class RefreshTokenCommandHandlerTests
         _refreshTokenRepository.Verify(x => x.GetByTokenAsync(oldRefreshToken, CancellationToken.None), Times.Once);
         _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
-        _tokenService.Verify(x => x.GenerateTokensAsync(user, CancellationToken.None), Times.Never);
+        _tokenService.Verify(x => x.GenerateTokensAsync(user, It.IsAny<IEnumerable<string>>(), CancellationToken.None), Times.Never);
     }
 }

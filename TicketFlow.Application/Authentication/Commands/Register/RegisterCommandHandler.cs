@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using TicketFlow.Application.Abstractions.Authentication;
 using TicketFlow.Application.Authentication.Models;
+using TicketFlow.Application.Authorization;
 
 namespace TicketFlow.Application.Authentication.Commands.Register;
 
@@ -26,13 +27,21 @@ public class RegisterCommandHandler(IIdentityService identityService, ILogger<Re
 
         var createdUser = await identityService.CreateUserAsync(user, request.Password, cancellationToken);
 
-        if (createdUser.Success)
+        if (!createdUser.Success)
         {
-            logger.LogInformation("User {Email} successfully registered", request.Email);
-            return new RegistrationSucceeded(createdUser.User!);
+            logger.LogInformation("User {Email} registration failed", request.Email);
+            return new RegistrationFailed(createdUser.Errors!);
         }
 
-        logger.LogInformation("User {Email} registration failed", request.Email);
-        return new RegistrationFailed(createdUser.Errors!);
+        var assignRoleResult = await identityService.AddToRoleAsync(createdUser.User!, Roles.User, cancellationToken);
+
+        if (!assignRoleResult.Success)
+        {
+            logger.LogWarning("Failed to assign {Email} to role {Role}", request.Email, Roles.User);
+            return new RegistrationFailed(assignRoleResult.Errors!);
+        }
+
+        logger.LogInformation("User {Email} successfully registered", request.Email);
+        return new RegistrationSucceeded(createdUser.User!);
     }
 }

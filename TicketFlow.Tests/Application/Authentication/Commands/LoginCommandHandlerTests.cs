@@ -4,6 +4,7 @@ using TicketFlow.Application.Abstractions.Authentication;
 using TicketFlow.Application.Abstractions.Repositories;
 using TicketFlow.Application.Authentication.Commands.Login;
 using TicketFlow.Application.Authentication.Models;
+using TicketFlow.Application.Authorization;
 using TicketFlow.Contracts.Authentication;
 using TicketFlow.Domain.Entities;
 
@@ -34,17 +35,22 @@ public class LoginCommandHandlerTests
         var activeUser = new User { Id = "user-id", Email = email };
         var expiresAt = DateTime.UtcNow;
         var tokenResponse = new TokenResponse { AccessToken = "access token", ExpiresAt = expiresAt, RefreshToken = "refresh token", TokenType = "bearer" };
+        var roles = new List<string> { Roles.User };
 
         _identityService
             .Setup(x => x.FindByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(activeUser);
 
         _identityService
-            .Setup(x => x.CheckPasswordAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.CheckPasswordAsync(activeUser, It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
+        _identityService
+            .Setup(x => x.GetRolesAsync(activeUser, CancellationToken.None))
+            .ReturnsAsync(roles);
+
         _tokenService
-            .Setup(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GenerateTokensAsync(activeUser, roles, CancellationToken.None))
             .ReturnsAsync(tokenResponse);
 
         _refreshTokenRepository
@@ -65,7 +71,7 @@ public class LoginCommandHandlerTests
 
         _identityService.Verify(x => x.FindByEmailAsync(email, CancellationToken.None), Times.Once);
         _identityService.Verify(x => x.CheckPasswordAsync(activeUser, password, CancellationToken.None), Times.Once);
-        _tokenService.Verify(x => x.GenerateTokensAsync(activeUser, CancellationToken.None), Times.Once);
+        _tokenService.Verify(x => x.GenerateTokensAsync(activeUser, roles, CancellationToken.None), Times.Once);
         _refreshTokenRepository.Verify(
             x => x.AddAsync(
                 It.Is<RefreshToken>(r => r.UserId == "user-id" && r.Token == tokenResponse.RefreshToken && r.UserId == activeUser.Id && r.ExpiresAt > DateTimeOffset.UtcNow),
@@ -90,7 +96,7 @@ public class LoginCommandHandlerTests
 
         _identityService.Verify(x => x.FindByEmailAsync(email, CancellationToken.None), Times.Once);
         _identityService.Verify(x => x.CheckPasswordAsync(It.Is<User>(e => e.Email == email), password, CancellationToken.None), Times.Never);
-        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>()), Times.Never);
     }
@@ -113,7 +119,7 @@ public class LoginCommandHandlerTests
 
         _identityService.Verify(x => x.FindByEmailAsync(email, CancellationToken.None), Times.Once);
         _identityService.Verify(x => x.CheckPasswordAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
-        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -139,7 +145,7 @@ public class LoginCommandHandlerTests
 
         _identityService.Verify(x => x.FindByEmailAsync(email, CancellationToken.None), Times.Once);
         _identityService.Verify(x => x.CheckPasswordAsync(activeUser, password, CancellationToken.None), Times.Once);
-        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -161,7 +167,7 @@ public class LoginCommandHandlerTests
 
         _identityService.Verify(x => x.FindByEmailAsync(email, CancellationToken.None), Times.Once);
         _identityService.Verify(x => x.CheckPasswordAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
-        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+        _tokenService.Verify(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -183,7 +189,7 @@ public class LoginCommandHandlerTests
             .ReturnsAsync(true);
 
         _tokenService
-            .Setup(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(exception);
 
         var result = await Assert.ThrowsAsync<InvalidOperationException>(() => _handler.Handle(command, CancellationToken.None));
@@ -192,7 +198,7 @@ public class LoginCommandHandlerTests
 
         _identityService.Verify(x => x.FindByEmailAsync(email, CancellationToken.None), Times.Once);
         _identityService.Verify(x => x.CheckPasswordAsync(It.Is<User>(u => u.Email == email), password, CancellationToken.None), Times.Once);
-        _tokenService.Verify(x => x.GenerateTokensAsync(It.Is<User>(u => u.Email == email), CancellationToken.None), Times.Once);
+        _tokenService.Verify(x => x.GenerateTokensAsync(It.Is<User>(u => u.Email == email), It.IsAny<IEnumerable<string>>(), CancellationToken.None), Times.Once);
         _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -215,7 +221,7 @@ public class LoginCommandHandlerTests
             .ReturnsAsync(true);
 
         _tokenService
-            .Setup(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(tokenResponse);
 
         _refreshTokenRepository
@@ -228,7 +234,7 @@ public class LoginCommandHandlerTests
 
         _identityService.Verify(x => x.FindByEmailAsync(email, CancellationToken.None), Times.Once);
         _identityService.Verify(x => x.CheckPasswordAsync(It.Is<User>(u => u.Email == email), password, CancellationToken.None), Times.Once);
-        _tokenService.Verify(x => x.GenerateTokensAsync(It.Is<User>(u => u.Email == email), CancellationToken.None), Times.Once);
+        _tokenService.Verify(x => x.GenerateTokensAsync(It.Is<User>(u => u.Email == email), It.IsAny<IEnumerable<string>>(), CancellationToken.None), Times.Once);
         _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokenRepository.Verify(x => x.AddAsync(
             It.Is<RefreshToken>(r => r.Token == tokenResponse.RefreshToken && r.UserId == activeUser.Id && r.ExpiresAt > DateTimeOffset.UtcNow),
@@ -266,7 +272,7 @@ public class LoginCommandHandlerTests
             .ReturnsAsync(true);
 
         _tokenService
-            .Setup(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GenerateTokensAsync(It.IsAny<User>(), It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(tokenResponse);
 
         _refreshTokenRepository

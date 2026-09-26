@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using TicketFlow.Domain.Background;
 using TicketFlow.Domain.Common;
 using TicketFlow.Domain.Entities;
@@ -6,7 +8,7 @@ using TicketFlow.Infrastructure.Persistence.Outbox;
 
 namespace TicketFlow.Infrastructure.Persistence;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbContext<User, IdentityRole, string>(options)
 {
     public DbSet<Event> Events => Set<Event>();
     public DbSet<Seat> Seats => Set<Seat>();

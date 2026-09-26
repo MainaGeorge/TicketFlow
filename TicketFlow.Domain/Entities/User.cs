@@ -15,10 +15,7 @@ public class User : IdentityUser, IHasDomainEvents
 
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
-    public void ClearDomainEvents()
-    {
-        _domainEvents.Clear();
-    }
+    public void ClearDomainEvents() => _domainEvents.Clear();
 
     public void Reactivate()
     {

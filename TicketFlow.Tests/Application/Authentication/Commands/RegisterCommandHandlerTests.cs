@@ -3,6 +3,7 @@ using Moq;
 using TicketFlow.Application.Abstractions.Authentication;
 using TicketFlow.Application.Authentication.Commands.Register;
 using TicketFlow.Application.Authentication.Models;
+using TicketFlow.Application.Authorization;
 using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Tests.Application.Authentication.Commands;
@@ -56,6 +57,10 @@ public class RegisterCommandHandlerTests
             .Setup(x => x.CreateUserAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(identityCreationResult);
 
+        _identityService
+            .Setup(x => x.AddToRoleAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdentityUpdateResult(Success: true));
+
         var registrationResult = await _handler.Handle(registerCommand, CancellationToken.None);
 
         var userRegistrationResult = Assert.IsType<RegistrationSucceeded>(registrationResult);
@@ -69,6 +74,8 @@ public class RegisterCommandHandlerTests
         _identityService.Verify(x => x.CreateUserAsync(
             It.Is<User>(u => u.IsActive == user.IsActive && u.Email == email && u.DisplayName == displayName && u.UserName == email && u.IsActive),
             password, CancellationToken.None), Times.Once);
+        _identityService.Verify(x => x.AddToRoleAsync(It.Is<User>(u => u.IsActive == user.IsActive && u.Email == email && u.DisplayName == displayName && u.UserName == email && u.IsActive),
+            Roles.User, CancellationToken.None), Times.Once);
     }
 
     [Fact]
@@ -170,6 +177,10 @@ public class RegisterCommandHandlerTests
             .Setup(x => x.CreateUserAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(identityCreationResult);
 
+        _identityService
+            .Setup(x => x.AddToRoleAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdentityUpdateResult(Success: true));
+
         var registrationResult = await _handler.Handle(registerCommand, token);
 
         var userRegistrationResult = Assert.IsType<RegistrationSucceeded>(registrationResult);
@@ -179,5 +190,8 @@ public class RegisterCommandHandlerTests
         _identityService.Verify(x => x.CreateUserAsync(
             It.Is<User>(u => u.IsActive == user.IsActive && u.Email == email && u.DisplayName == displayName),
             password, token), Times.Once);
+        _identityService.Verify(x => x.AddToRoleAsync(
+            It.Is<User>(u => u.IsActive == user.IsActive && u.Email == email && u.DisplayName == displayName),
+            Roles.User, token), Times.Once);
     }
 }

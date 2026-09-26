@@ -5,5 +5,5 @@ namespace TicketFlow.Application.Abstractions.Authentication;
 
 public interface ITokenService
 {
-    Task<TokenResponse> GenerateTokensAsync(User user, CancellationToken cancellationToken);
+    Task<TokenResponse> GenerateTokensAsync(User user, IEnumerable<string> roles, CancellationToken cancellationToken);
 }

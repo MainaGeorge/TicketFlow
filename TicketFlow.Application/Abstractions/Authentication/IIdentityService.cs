@@ -9,4 +9,6 @@ public interface IIdentityService
     Task<User?> FindByEmailAsync(string email, CancellationToken cancellationToken = default);
     Task<bool> CheckPasswordAsync(User user, string password, CancellationToken cancellationToken = default);
     Task<IdentityUpdateResult> UpdateUserAsync(User user, CancellationToken cancellationToken = default);
+    Task<IList<string>> GetRolesAsync(User user, CancellationToken cancellationToken = default);
+    Task<IdentityUpdateResult> AddToRoleAsync(User user, string role, CancellationToken cancellationToken = default);
 }

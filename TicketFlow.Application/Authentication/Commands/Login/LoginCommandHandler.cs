@@ -38,9 +38,11 @@ public class LoginCommandHandler(
             return new InvalidCredentials();
         }
 
-        var tokens = await tokenService.GenerateTokensAsync(user, cancellationToken);
+        var userRoles = await identityService.GetRolesAsync(user, cancellationToken);
 
-        var refreshToken = new TicketFlow.Domain.Entities.RefreshToken
+        var tokens = await tokenService.GenerateTokensAsync(user, userRoles, cancellationToken);
+
+        var refreshToken = new Domain.Entities.RefreshToken
         {
             Token = tokens.RefreshToken,
             UserId = user.Id,

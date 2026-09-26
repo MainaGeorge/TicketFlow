@@ -3,9 +3,10 @@ using Microsoft.Extensions.Options;
 using Moq;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using TicketFlow.Application.Authorization;
 using TicketFlow.Application.Common.Configurations;
 using TicketFlow.Domain.Entities;
-using TicketFlow.Infrastructure.Services;
+using TicketFlow.Infrastructure.Authentication;
 
 namespace TicketFlow.Tests.Infrastructure.Services;
 
@@ -35,7 +36,7 @@ public class TokenServiceTests
             UserName = "test@email.com"
         };
 
-        var result = await service.GenerateTokensAsync(user, CancellationToken.None);
+        var result = await service.GenerateTokensAsync(user, [], CancellationToken.None);
 
         Assert.NotNull(result);
         Assert.NotEmpty(result.AccessToken);
@@ -67,7 +68,9 @@ public class TokenServiceTests
             UserName = "test@email.com"
         };
 
-        var result = await service.GenerateTokensAsync(user, CancellationToken.None);
+        List<string> rolesCollection = [Roles.User, Roles.Admin];
+
+        var result = await service.GenerateTokensAsync(user, rolesCollection, CancellationToken.None);
         var handler = new JwtSecurityTokenHandler();
         var token = handler.ReadJwtToken(result.AccessToken);
 
@@ -75,5 +78,10 @@ public class TokenServiceTests
         Assert.Equal(user.Email, token.Claims.First(c => c.Type == JwtRegisteredClaimNames.Email).Value);
         Assert.Equal(user.Id, token.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value);
         Assert.Equal(user.UserName, token.Claims.First(c => c.Type == ClaimTypes.Name).Value);
+
+        var roleClaims = token.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList();
+        Assert.Equal(2, roleClaims.Count);
+        Assert.Contains(Roles.User, roleClaims);
+        Assert.Contains(Roles.Admin, roleClaims);
     }
 }

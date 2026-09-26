@@ -13,7 +13,7 @@ public class BookingEndpointTests
     {
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
-        var (userToken, eventId, seatId) = await CreateUserAndSeat(client, factory);
+        var (userToken, eventId, seatId) = await CreateUserAndSeat(factory, client);
         TestHelpers.SetBearerToken(client, userToken);
         var response = await client.PostAsJsonAsync("/api/bookings", new { eventId, seatId });
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -35,7 +35,7 @@ public class BookingEndpointTests
     {
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
-        var token = await TestHelpers.RegisterAndLogin(client, "user@test.com");
+        var token = await TestHelpers.RegisterAndLoginAsAdmin(factory, client, "user@test.com");
         TestHelpers.SetBearerToken(client, token);
         var eventResponse = await client.PostAsJsonAsync("api/events", new { name = "Test Concert", venue = "Test Arena", eventDate = DateTime.UtcNow.AddDays(30) });
         var eventDto = await eventResponse.Content.ReadFromJsonAsync<EventResponse>();
@@ -48,7 +48,7 @@ public class BookingEndpointTests
     {
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
-        var token = await TestHelpers.RegisterAndLogin(client, "user@test.com");
+        var token = await TestHelpers.RegisterAndLoginAsAdmin(factory, client, "user@test.com");
         TestHelpers.SetBearerToken(client, token);
         var eventResponse1 = await client.PostAsJsonAsync("api/events", new { name = "Test Concert", venue = "Test Arena", eventDate = DateTime.UtcNow.AddDays(30) });
         var eventResponse2 = await client.PostAsJsonAsync("api/events", new { name = "Test Sports Concert", venue = "Test Arena", eventDate = DateTime.UtcNow.AddDays(30) });
@@ -78,7 +78,7 @@ public class BookingEndpointTests
     {
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
-        var (user1Token, eventId, seatId) = await CreateUserAndSeat(client, factory, "user1@test.com");
+        var (user1Token, eventId, seatId) = await CreateUserAndSeat(factory, client, "user1@test.com");
         TestHelpers.SetBearerToken(client, user1Token);
         var firstResponse = await client.PostAsJsonAsync("/api/bookings", new { eventId, seatId });
         Assert.Equal(HttpStatusCode.Created, firstResponse.StatusCode);
@@ -94,7 +94,7 @@ public class BookingEndpointTests
     {
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
-        var (token, eventId, seatId) = await CreateUserAndSeat(client, factory);
+        var (token, eventId, seatId) = await CreateUserAndSeat(factory, client);
         TestHelpers.SetBearerToken(client, token);
 
         var createResponse = await client.PostAsJsonAsync("/api/bookings", new { eventId, seatId });
@@ -116,7 +116,7 @@ public class BookingEndpointTests
         using var client = factory.CreateClient();
 
         // User 1 creates a booking.
-        var (user1Token, eventId, seatId) = await CreateUserAndSeat(client, factory, "user1@test.com");
+        var (user1Token, eventId, seatId) = await CreateUserAndSeat(factory, client, "user1@test.com");
         TestHelpers.SetBearerToken(client, user1Token);
         var createResponse = await client.PostAsJsonAsync("/api/bookings", new { eventId, seatId });
 
@@ -171,7 +171,7 @@ public class BookingEndpointTests
         using var setupClient = factory.CreateClient();
 
         // Create the seat first.
-        var (_, eventId, seatId) = await CreateUserAndSeat(setupClient, factory, "setup@test.com");
+        var (_, eventId, seatId) = await CreateUserAndSeat(factory, setupClient, "setup@test.com");
 
         // Create two independent clients/users.
         var client1 = factory.CreateClient();
@@ -199,9 +199,9 @@ public class BookingEndpointTests
     }
 
     private static async Task<(string Token, int EventId, int SeatId)>
-        CreateUserAndSeat(HttpClient client, CustomWebApplicationFactory factory, string email = "user@test.com")
+        CreateUserAndSeat(CustomWebApplicationFactory factory, HttpClient client, string email = "user@test.com")
     {
-        var token = await TestHelpers.RegisterAndLogin(client, email);
+        var token = await TestHelpers.RegisterAndLoginAsAdmin(factory, client, email);
         TestHelpers.SetBearerToken(client, token);
 
         var eventResponse = await client.PostAsJsonAsync("/api/events", new { name = "Test Concert", venue = "Test Arena", eventDate = DateTime.UtcNow.AddDays(30) });

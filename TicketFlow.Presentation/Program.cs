@@ -138,6 +138,8 @@ app.UseSerilogRequestLogging(options =>
 if (app.Environment.IsDevelopment())
 {
     await app.ApplyMigrationsAsync();
+    await app.SeedRoles();
+    await app.SeedAdmin(builder.Configuration);
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {

@@ -11,7 +11,6 @@ public sealed class BookingConfirmationConsumer(
 {
     public async Task Consume(ConsumeContext<BookingCreatedIntegrationEvent> context)
     {
-        // We'll implement this next.
         logger.LogInformation("Received booking created integration event for booking {BookingId} and user {UserId}", context.Message.BookingId, context.Message.UserId);
 
         var work = new BookingConfirmationWork(context.Message.BookingId, context.Message.UserId);

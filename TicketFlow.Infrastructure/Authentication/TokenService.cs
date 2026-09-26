@@ -10,12 +10,12 @@ using TicketFlow.Application.Common.Configurations;
 using TicketFlow.Contracts.Authentication;
 using TicketFlow.Domain.Entities;
 
-namespace TicketFlow.Infrastructure.Services;
+namespace TicketFlow.Infrastructure.Authentication;
 
 public class TokenService(ILogger<TokenService> logger, IOptions<JwtSettings> jwtOptions) : ITokenService
 {
     private readonly JwtSettings _jwtSettings = jwtOptions.Value;
-    private string GenerateAccessTokens(User user, DateTimeOffset expiresAt)
+    private string GenerateAccessTokens(User user, IEnumerable<string> roles, DateTimeOffset expiresAt)
     {
         var claims = new List<Claim>
         {
@@ -24,6 +24,9 @@ public class TokenService(ILogger<TokenService> logger, IOptions<JwtSettings> jw
             new(ClaimTypes.NameIdentifier, user.Id),
             new(ClaimTypes.Name, user.UserName ?? string.Empty)
         };
+
+        var roleClaims = roles.Select(r => new Claim(ClaimTypes.Role, r));
+        claims.AddRange(roleClaims);
 
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
@@ -44,10 +47,10 @@ public class TokenService(ILogger<TokenService> logger, IOptions<JwtSettings> jw
         return Convert.ToBase64String(randomBytes);
     }
 
-    public Task<TokenResponse> GenerateTokensAsync(User user, CancellationToken cancellationToken = default)
+    public Task<TokenResponse> GenerateTokensAsync(User user, IEnumerable<string> roles, CancellationToken cancellationToken = default)
     {
         var expiresAt = DateTimeOffset.UtcNow.AddMinutes(_jwtSettings.AccessTokenLifetimeMinutes);
-        var accessToken = GenerateAccessTokens(user, expiresAt);
+        var accessToken = GenerateAccessTokens(user, roles, expiresAt);
         var refreshToken = GenerateRefreshToken();
 
         logger.LogInformation("Generated access and refresh tokens for user {Email}.", user.Email);

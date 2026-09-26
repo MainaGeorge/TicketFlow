@@ -14,10 +14,8 @@ public sealed class OutboxMessageFactory
     private static OutboxMessage Create(object message, OutboxMessageType messageType)
     {
         var type = message.GetType();
-
-        var payload = JsonSerializer.Serialize(message, type);
-
         var typeName = type.FullName ?? throw new InvalidOperationException("Outbox message type must have a full name.");
+        var payload = JsonSerializer.Serialize(message, type);
 
         return new OutboxMessage(typeName, payload, messageType);
     }

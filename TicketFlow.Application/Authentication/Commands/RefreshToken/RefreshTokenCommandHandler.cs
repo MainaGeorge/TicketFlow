@@ -7,6 +7,7 @@ namespace TicketFlow.Application.Authentication.Commands.RefreshToken;
 
 public class RefreshTokenCommandHandler(
     IRefreshTokenRepository refreshTokenRepository,
+    IIdentityService identityService,
     ITokenService tokenService) : IRequestHandler<RefreshTokenCommand, RefreshTokenResult>
 {
     public async Task<RefreshTokenResult> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
@@ -25,7 +26,9 @@ public class RefreshTokenCommandHandler(
         if (refreshToken.User is null || !refreshToken.User.IsActive)
             return new RefreshTokenInvalid();
 
-        var tokens = await tokenService.GenerateTokensAsync(refreshToken.User!, cancellationToken);
+        var roles = await identityService.GetRolesAsync(refreshToken.User, cancellationToken);
+
+        var tokens = await tokenService.GenerateTokensAsync(refreshToken.User, roles, cancellationToken);
 
         refreshToken.RevokedAt = DateTimeOffset.UtcNow;
         refreshToken.ReplacedBy = tokens.RefreshToken;

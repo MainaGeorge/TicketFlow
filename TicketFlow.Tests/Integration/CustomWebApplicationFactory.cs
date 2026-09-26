@@ -37,6 +37,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             dbContext.Database.Migrate();
+
+            DatabaseMigrationExtensions.SeedRolesAsync(scope.ServiceProvider).GetAwaiter().GetResult();
         });
     }
     public override async ValueTask DisposeAsync()

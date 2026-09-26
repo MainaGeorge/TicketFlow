@@ -9,6 +9,7 @@ using TicketFlow.Application.Abstractions.Messaging;
 using TicketFlow.Application.Abstractions.Repositories;
 using TicketFlow.Application.Background;
 using TicketFlow.Domain.Entities;
+using TicketFlow.Infrastructure.Authentication;
 using TicketFlow.Infrastructure.Background;
 using TicketFlow.Infrastructure.Caching;
 using TicketFlow.Infrastructure.Messaging.Consumers;
@@ -16,7 +17,6 @@ using TicketFlow.Infrastructure.Messaging.Publishers;
 using TicketFlow.Infrastructure.Persistence;
 using TicketFlow.Infrastructure.Persistence.Outbox;
 using TicketFlow.Infrastructure.Persistence.Repositories;
-using TicketFlow.Infrastructure.Services;
 
 namespace TicketFlow.Infrastructure;
 

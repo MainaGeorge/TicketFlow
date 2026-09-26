@@ -8,9 +8,9 @@ namespace TicketFlow.Tests.Integration;
 public class SeatEndpointsTests
 {
     private static async Task<int> CreateEvent(
-        HttpClient client)
+        CustomWebApplicationFactory factory, HttpClient client)
     {
-        var token = await TestHelpers.RegisterAndLogin(client, "test@user.com");
+        var token = await TestHelpers.RegisterAndLoginAsAdmin(factory, client, "test@user.com");
         TestHelpers.SetBearerToken(client, token);
         var response = await client.PostAsJsonAsync("/api/events", new { name = "Rock Concert", venue = "London Arena", eventDate = DateTime.UtcNow.AddDays(30) });
         response.EnsureSuccessStatusCode();
@@ -23,7 +23,7 @@ public class SeatEndpointsTests
     {
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
-        var eventId = await CreateEvent(client);
+        var eventId = await CreateEvent(factory, client);
         var response = await client.PostAsJsonAsync($"/api/events/{eventId}/seats", new { row = "A", number = 1, price = 50 });
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
@@ -33,7 +33,7 @@ public class SeatEndpointsTests
     {
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
-        var eventId = await CreateEvent(client);
+        var eventId = await CreateEvent(factory, client);
         var response = await client.PostAsJsonAsync($"/api/events/{eventId}/seats", new { row = "A", number = 0, price = 50 });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -43,7 +43,7 @@ public class SeatEndpointsTests
     {
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
-        var eventId = await CreateEvent(client);
+        var eventId = await CreateEvent(factory, client);
         var response = await client.PostAsJsonAsync($"/api/events/{eventId}/seats", new { row = "A", number = -1, price = 50 });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -53,7 +53,7 @@ public class SeatEndpointsTests
     {
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
-        var eventId = await CreateEvent(client);
+        var eventId = await CreateEvent(factory, client);
         var response = await client.PostAsJsonAsync($"/api/events/{eventId}/seats", new { row = "A", number = 1, price = -10 });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -63,7 +63,7 @@ public class SeatEndpointsTests
     {
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
-        var eventId = await CreateEvent(client);
+        var eventId = await CreateEvent(factory, client);
         var response = await client.PostAsJsonAsync($"/api/events/{eventId}/seats", new { row = "", number = 1, price = 50 });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -73,7 +73,7 @@ public class SeatEndpointsTests
     {
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
-        var token = await TestHelpers.RegisterAndLogin(client, "test@user.com");
+        var token = await TestHelpers.RegisterAndLoginAsAdmin(factory, client, "test@user.com");
         TestHelpers.SetBearerToken(client, token);
         var response = await client.PostAsJsonAsync("/api/events/999999/seats", new { row = "A", number = 1, price = 50 });
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -84,7 +84,7 @@ public class SeatEndpointsTests
     {
         await using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
-        var eventId = await CreateEvent(client);
+        var eventId = await CreateEvent(factory, client);
         var response = await client.PostAsJsonAsync($"/api/events/{eventId}/seats", new { row = "A", number = 1, price = 0m });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);

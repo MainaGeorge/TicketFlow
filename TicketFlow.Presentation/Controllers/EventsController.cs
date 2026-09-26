@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using TicketFlow.Application.Authorization;
 using TicketFlow.Application.Events.Commands.CreateEvent;
 using TicketFlow.Application.Events.Models;
 using TicketFlow.Application.Events.Queries.GetAllEvents;
@@ -24,6 +25,7 @@ namespace TicketFlow.Presentation.Controllers;
 public class EventsController(ISender sender, ILogger<EventsController> logger) : ControllerBase
 {
     [HttpPost]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> CreateEvent([FromBody] CreateEventRequest request, CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
