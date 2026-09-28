@@ -1,23 +1,26 @@
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
+using MassTransit.Logging;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Serilog;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Security.Claims;
-using TicketFlow.Presentation.Exceptions;
-using TicketFlow.Presentation.Swagger;
-using TicketFlow.Infrastructure;
 using TicketFlow.Application;
-using TicketFlow.Infrastructure.Persistence;
 using TicketFlow.Application.Common.DependencyInjection;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
+using TicketFlow.Infrastructure;
+using TicketFlow.Infrastructure.Health;
 using TicketFlow.Infrastructure.Observability;
-using MassTransit.Logging;
-using OpenTelemetry.Metrics;
+using TicketFlow.Infrastructure.Persistence;
+using TicketFlow.Presentation.Exceptions;
+using TicketFlow.Presentation.Health;
+using TicketFlow.Presentation.Swagger;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -146,6 +149,11 @@ builder.Services
         });
     });
 
+builder.Services
+    .AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>(name: "sql", tags: ["ready"])
+    .AddCheck<RedisHealthCheck>(name: "redis", tags: ["dependencies"]);
+
 var app = builder.Build();
 
 app.UseSerilogRequestLogging(options =>
@@ -180,5 +188,18 @@ app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = HealthCheckResponseWriter.WriteResponse
+});
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false
+});
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+});
 app.Run();

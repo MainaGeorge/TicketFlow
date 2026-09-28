@@ -11,7 +11,6 @@ using TicketFlow.Domain.Common;
 using TicketFlow.Domain.Events;
 using TicketFlow.Infrastructure.Persistence;
 using TicketFlow.Infrastructure.Persistence.Outbox;
-using TicketFlow.Tests.Integration;
 
 namespace TicketFlow.Tests.Integration.Persistence;
 
