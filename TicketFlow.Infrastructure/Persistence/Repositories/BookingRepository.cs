@@ -5,6 +5,7 @@ using TicketFlow.Application.Bookings.Exceptions;
 using TicketFlow.Application.Bookings.Models;
 using TicketFlow.Contracts.IntegrationEvents;
 using TicketFlow.Domain.Entities;
+using TicketFlow.Infrastructure.Observability;
 using TicketFlow.Infrastructure.Persistence.Outbox;
 
 namespace TicketFlow.Infrastructure.Persistence.Repositories;
@@ -55,6 +56,7 @@ public class BookingRepository(AppDbContext context) : IBookingRepository
             await context.SaveChangesAsync(cancellationToken);
 
             await transaction.CommitAsync(cancellationToken);
+            TicketFlowTelemetry.BookingsCreated.Add(1);
         }
         catch (DbUpdateException ex) when (ex.InnerException is SqlException sql && sql.Number is 2601 or 2627)
         {

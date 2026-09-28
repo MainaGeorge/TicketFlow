@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Diagnostics;
+using System.Text.Json;
 using TicketFlow.Domain.Common;
 
 namespace TicketFlow.Infrastructure.Persistence.Outbox;
@@ -17,6 +18,8 @@ public sealed class OutboxMessageFactory
         var typeName = type.FullName ?? throw new InvalidOperationException("Outbox message type must have a full name.");
         var payload = JsonSerializer.Serialize(message, type);
 
-        return new OutboxMessage(typeName, payload, messageType);
+        var activity = Activity.Current;
+
+        return new OutboxMessage(typeName, payload, messageType, activity?.Id, activity?.TraceStateString);
     }
 }

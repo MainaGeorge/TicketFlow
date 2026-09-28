@@ -234,9 +234,14 @@ public class BookingEndpointTests
         };
         var seatResponse = await client.PostAsJsonAsync($"/api/events/{eventDto.Id}/seats", payload);
         seatResponse.EnsureSuccessStatusCode();
-        var seatDto = await seatResponse.Content.ReadFromJsonAsync<List<SeatDto>>();
+        var seats = await seatResponse.Content.ReadFromJsonAsync<List<SeatDto>>();
 
-        return seatDto!.Count == 0 ? throw new InvalidOperationException("Seat was not returned.") : ((string Token, int EventId, int SeatId))(token, eventDto.Id, seatDto[0].Id);
+        if (seats is not [var createdSeat])
+        {
+            throw new InvalidOperationException("Expected exactly one created seat.");
+        }
+
+        return (token, eventDto.Id, createdSeat.Id); ;
     }
 
 

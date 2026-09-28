@@ -1,11 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Diagnostics;
 using System.Text.Json;
 using TicketFlow.Application.Abstractions.Messaging;
 using TicketFlow.Application.ApplicationEvents;
 using TicketFlow.Contracts.IntegrationEvents;
 using TicketFlow.Domain.Common;
+using TicketFlow.Infrastructure.Observability;
 
 namespace TicketFlow.Infrastructure.Persistence.Outbox;
 
@@ -28,6 +30,17 @@ public class OutboxProcessor(
 
         foreach (var message in processingBatch)
         {
+            var hasParentContext = ActivityContext.TryParse(message.TraceParent, message.TraceState, true, out var parentContext);
+
+            using var activity = hasParentContext
+                ? TicketFlowTelemetry.ActivitySource.StartActivity("Outbox.Process", ActivityKind.Internal, parentContext)
+                : TicketFlowTelemetry.ActivitySource.StartActivity("Outbox.Process", ActivityKind.Internal);
+
+            activity?.SetTag("outbox.message.id", message.Id);
+            activity?.SetTag("outbox.message.type", message.Type);
+            activity?.SetTag("outbox.message.category", message.MessageType.ToString());
+            activity?.SetTag("outbox.retry_count", message.RetryCount);
+            var stopwatch = Stopwatch.StartNew();
             try
             {
                 switch (message.MessageType)
@@ -45,6 +58,7 @@ public class OutboxProcessor(
                 }
 
                 message.MarkProcessed();
+                TicketFlowTelemetry.OutboxProcessed.Add(1);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -52,6 +66,11 @@ public class OutboxProcessor(
             }
             catch (Exception exception)
             {
+                activity?.SetStatus(ActivityStatusCode.Error, exception.Message);
+                activity?.AddException(exception);
+
+                TicketFlowTelemetry.OutboxProcessingFailures.Add(1);
+
                 logger.LogError(
                     exception,
                     "Failed to process outbox message {OutboxMessageId} of type {OutboxMessageType}",
@@ -63,8 +82,18 @@ public class OutboxProcessor(
                 if (message.RetryCount >= options.Value.MaxRetryAttempts)
                     message.MarkFailed();
             }
-
-            await context.SaveChangesAsync(cancellationToken);
+            finally
+            {
+                try
+                {
+                    await context.SaveChangesAsync(cancellationToken);
+                }
+                finally
+                {
+                    stopwatch.Stop();
+                    TicketFlowTelemetry.OutboxProcessingDuration.Record(stopwatch.Elapsed.TotalMilliseconds);
+                }
+            }
         }
     }
 

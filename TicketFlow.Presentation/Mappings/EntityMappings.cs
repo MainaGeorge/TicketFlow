@@ -31,6 +31,10 @@ public static class EntityMappings
             Id = result!.Id,
             UserId = userId,
             SeatId = result.SeatId,
+            SeatNumber = result.SeatNumber,
+            SeatRow = result.SeatRow,
+            Price = result.SeatPrice,
+            EventId = result.EventId,
             CreatedAt = result.CreatedAt
         };
     }

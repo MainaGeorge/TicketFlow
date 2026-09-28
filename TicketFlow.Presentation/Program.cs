@@ -13,6 +13,11 @@ using TicketFlow.Infrastructure;
 using TicketFlow.Application;
 using TicketFlow.Infrastructure.Persistence;
 using TicketFlow.Application.Common.DependencyInjection;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using TicketFlow.Infrastructure.Observability;
+using MassTransit.Logging;
+using OpenTelemetry.Metrics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -107,20 +112,39 @@ builder.Services.AddSwaggerGen(options =>
             Scheme = "bearer",
             BearerFormat = "JWT",
             In = ParameterLocation.Header,
-            Description =
-                "Enter your JWT bearer token."
+            Description = "Enter your JWT bearer token."
         });
 
     options.AddSecurityRequirement(document =>
         new OpenApiSecurityRequirement
         {
-            [new OpenApiSecuritySchemeReference(
-                "Bearer",
-                document)] = []
+            [new OpenApiSecuritySchemeReference("Bearer", document)] = []
         });
 });
 
 builder.Services.AddJwtSettings(builder.Configuration);
+
+builder.Services
+    .AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService("TicketFlow.Api"))
+    .WithMetrics(metrics =>
+    {
+        metrics
+        .AddMeter(TicketFlowTelemetry.SourceName);
+    })
+    .WithTracing(tracing =>
+    {
+        tracing
+        .AddSource(TicketFlowTelemetry.SourceName)
+        .AddSource(DiagnosticHeaders.DefaultListenerName)
+        .AddRedisInstrumentation()
+        .AddAspNetCoreInstrumentation()
+        .AddSqlClientInstrumentation()
+        .AddOtlpExporter(options =>
+        {
+            options.Endpoint = new Uri("http://localhost:4317");
+        });
+    });
 
 var app = builder.Build();
 

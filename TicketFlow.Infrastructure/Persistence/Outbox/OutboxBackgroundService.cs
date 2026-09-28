@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using TicketFlow.Infrastructure.Observability;
 
 namespace TicketFlow.Infrastructure.Persistence.Outbox;
 
@@ -15,6 +16,7 @@ public class OutboxBackgroundService(
     {
         while (!stoppingToken.IsCancellationRequested)
         {
+            
             try
             {
                 await using var scope = scopeFactory.CreateAsyncScope();
@@ -32,6 +34,7 @@ public class OutboxBackgroundService(
             }
 
             await Task.Delay(TimeSpan.FromSeconds(options.Value.PollingIntervalSeconds), stoppingToken);
+            
         }
     }
 }

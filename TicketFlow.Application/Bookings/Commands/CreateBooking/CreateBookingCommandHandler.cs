@@ -48,7 +48,7 @@ public sealed class CreateBookingCommandHandler(
         {
             await bookingRepository.SaveCreatedBookingAsync(booking, cancellationToken);
 
-            return new BookingCreated(booking.Id, booking.SeatId, booking.UserId, booking.CreatedAt);
+            return new BookingCreated(booking.Id, booking.SeatId, booking.UserId, seat.EventId, seat.Row, seat.Number, seat.Price, booking.CreatedAt);
         }
         catch (SeatAlreadyBookedException)
         {

@@ -11,17 +11,22 @@ public class OutboxMessage
     public DateTimeOffset? FailedAt { get; private set; }
     public int RetryCount { get; private set; }
 
+    public string? TraceParent { get; private set; }
+    public string? TraceState { get; private set; }
+
     private OutboxMessage()
     {
     }
 
-    public OutboxMessage(string type, string payload, OutboxMessageType messageType)
+    public OutboxMessage(string type, string payload, OutboxMessageType messageType, string? traceParent = null, string? traceState = null)
     {
         Id = Guid.NewGuid();
         Type = type;
         Payload = payload;
         OccurredAt = DateTimeOffset.UtcNow;
         MessageType = messageType;
+        TraceParent = traceParent;
+        TraceState = traceState;
     }
 
     public void MarkProcessed() => ProcessedAt ??= DateTimeOffset.UtcNow;

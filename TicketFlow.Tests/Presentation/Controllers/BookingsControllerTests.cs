@@ -44,7 +44,7 @@ public class BookingsControllerTests
 
         _sender
             .Setup(x => x.Send(It.IsAny<CreateBookingCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new BookingCreated(bookingId, 5, "userId", DateTime.UtcNow));
+            .ReturnsAsync(new BookingCreated(bookingId, 5, "userId", 1, "A", 10, 100m, DateTime.UtcNow));
 
         var request = new CreateBookingRequest { EventId = 1, SeatId = 5 };
         var result = await _controller.CreateBooking(request, CancellationToken.None);

@@ -24,6 +24,10 @@ public record BookingCreated
         int Id,
         int SeatId,
         string UserId,
+        int EventId,
+        string SeatRow,
+        int SeatNumber,
+        decimal SeatPrice,
         DateTime CreatedAt
     )
     : BookingBaseResult;

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using StackExchange.Redis;
 using TicketFlow.Application.Abstractions.Authentication;
 using TicketFlow.Application.Abstractions.Caching;
 using TicketFlow.Application.Abstractions.Messaging;
@@ -39,13 +40,17 @@ public static class DependencyInjection
     private static IServiceCollection AddRedis(this IServiceCollection services, IConfiguration configuration)
     {
         var redisConnectionString = configuration["Redis:ConnectionString"] ?? throw new InvalidOperationException("Redis:ConnectionString is not configured.");
+        var redisOptions = ConfigurationOptions.Parse(redisConnectionString);
+        redisOptions.ConnectTimeout = 1000;
+        redisOptions.SyncTimeout = 1000;
+        redisOptions.AsyncTimeout = 1000;
+
+        IConnectionMultiplexer connectionMultiplexer = ConnectionMultiplexer.Connect(redisOptions);
+        services.AddSingleton(connectionMultiplexer);
         services.AddScoped<ICacheService, RedisCacheService>();
         services.AddStackExchangeRedisCache(options =>
         {
-            options.ConfigurationOptions =StackExchange.Redis.ConfigurationOptions.Parse(redisConnectionString);
-            options.ConfigurationOptions.ConnectTimeout = 1000;
-            options.ConfigurationOptions.SyncTimeout = 1000;
-            options.ConfigurationOptions.AsyncTimeout = 1000;
+            options.ConnectionMultiplexerFactory = () => Task.FromResult(connectionMultiplexer);
         });
 
         return services;
