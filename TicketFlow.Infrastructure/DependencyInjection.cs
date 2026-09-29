@@ -44,6 +44,7 @@ public static class DependencyInjection
         redisOptions.ConnectTimeout = 1000;
         redisOptions.SyncTimeout = 1000;
         redisOptions.AsyncTimeout = 1000;
+        redisOptions.AbortOnConnectFail = false;
 
         IConnectionMultiplexer connectionMultiplexer = ConnectionMultiplexer.Connect(redisOptions);
         services.AddSingleton(connectionMultiplexer);

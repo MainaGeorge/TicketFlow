@@ -145,7 +145,8 @@ builder.Services
         .AddSqlClientInstrumentation()
         .AddOtlpExporter(options =>
         {
-            options.Endpoint = new Uri("http://localhost:4317");
+            options.Endpoint = new Uri(builder.Configuration["OpenTelemetry:OtlpEndpoint"]
+                ?? throw new InvalidOperationException("OpenTelemetry:OtlpEndpoint is not configured."));
         });
     });
 
