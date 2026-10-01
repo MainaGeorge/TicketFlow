@@ -1,12 +1,10 @@
-﻿using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.TestHost;
+﻿using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
 using Moq;
 using System.Text.Json;
 using TicketFlow.Application.Abstractions.Messaging;
@@ -16,11 +14,11 @@ using TicketFlow.Domain.Common;
 using TicketFlow.Domain.Events;
 using TicketFlow.Infrastructure.Persistence;
 using TicketFlow.Infrastructure.Persistence.Outbox;
-using TicketFlow.Tests.Integration;
+using TicketFlow.Tests.Integration.Infrastructure;
 
 namespace TicketFlow.Tests.Integration.Persistence;
 
-public class OutboxProcessorTests
+public class OutboxProcessorTests(IntegrationTestFixture sqlServerFixture) : IntegrationTestsBase(sqlServerFixture)
 {
     [Fact]
     public async Task ProcessAsync_WhenMessageExists_DispatchesEventAndPersistsOutboxMessageProcessedAt()
@@ -34,7 +32,7 @@ public class OutboxProcessorTests
             .Callback((IEnumerable<IDomainEvent> events, CancellationToken ct) => domainEvents = [.. events])
             .Returns(Task.CompletedTask);
 
-        await using var baseFactory = new CustomWebApplicationFactory();
+        await using var baseFactory = CreateFactory();
 
         await using var factory = baseFactory
             .WithWebHostBuilder(builder =>
@@ -111,7 +109,7 @@ public class OutboxProcessorTests
             .Setup(x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(expectedException);
 
-        await using var baseFactory = new CustomWebApplicationFactory();
+        await using var baseFactory = CreateFactory();
 
         await using var factory = baseFactory
             .WithWebHostBuilder(builder =>
@@ -203,7 +201,7 @@ public class OutboxProcessorTests
                 }
             );
 
-        await using var baseFactory = new CustomWebApplicationFactory();
+        await using var baseFactory = CreateFactory();
 
         await using var factory = baseFactory
             .WithWebHostBuilder(builder =>
@@ -291,7 +289,7 @@ public class OutboxProcessorTests
             .Setup(x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(expectedException);
 
-        await using var baseFactory = new CustomWebApplicationFactory();
+        await using var baseFactory = CreateFactory();
 
         await using var factory = baseFactory
             .WithWebHostBuilder(builder =>
@@ -406,7 +404,7 @@ public class OutboxProcessorTests
                 return Task.FromCanceled(token);
             });
 
-        await using var baseFactory = new CustomWebApplicationFactory();
+        await using var baseFactory = CreateFactory();
 
         await using var factory = baseFactory
             .WithWebHostBuilder(builder =>
@@ -485,7 +483,7 @@ public class OutboxProcessorTests
             })
             .Returns(Task.CompletedTask);
 
-        await using var baseFactory = new CustomWebApplicationFactory();
+        await using var baseFactory = CreateFactory();
 
         await using var factory = baseFactory
             .WithWebHostBuilder(builder =>
@@ -560,7 +558,7 @@ public class OutboxProcessorTests
             .Setup(x => x.PublishAsync(It.IsAny<object>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(expectedException);
 
-        await using var baseFactory = new CustomWebApplicationFactory();
+        await using var baseFactory = CreateFactory();
 
         await using var factory = baseFactory
             .WithWebHostBuilder(builder =>

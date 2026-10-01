@@ -6,16 +6,17 @@ using TicketFlow.Application.Background;
 using TicketFlow.Infrastructure.Background;
 using TicketFlow.Infrastructure.Persistence;
 using TicketFlow.Tests.Integration;
+using TicketFlow.Tests.Integration.Infrastructure;
 
 namespace TicketFlow.Tests.Infrastructure.Background;
 
-public class BookingConfirmationProcessorTests
+public class BookingConfirmationProcessorTests : IntegrationTestsBase
 {
     private readonly Mock<IProcessedJobStore> _backgroundProcessedJobStore;
     private readonly Mock<ILogger<BookingConfirmationProcessor>> _logger;
     private readonly BookingConfirmationProcessor _bookingConfrimationProcessor;
 
-    public BookingConfirmationProcessorTests()
+    public BookingConfirmationProcessorTests(IntegrationTestFixture testFixture) : base(testFixture)
     {
         _backgroundProcessedJobStore = new Mock<IProcessedJobStore>();
         _logger = new Mock<ILogger<BookingConfirmationProcessor>>();
@@ -63,7 +64,7 @@ public class BookingConfirmationProcessorTests
     [Fact]
     public async Task MarkProcessedAsync_WhenIdempotencyKeyAlreadyExists_ThrowsDbUpdateException()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         await using var scope = factory.Services.CreateAsyncScope();
 
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -82,7 +83,7 @@ public class BookingConfirmationProcessorTests
     {
         var idempotencyKey = $"BookingConfirmation:{Guid.NewGuid()}";
 
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         await using var scope = factory.Services.CreateAsyncScope();
 
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();

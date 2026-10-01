@@ -1,19 +1,20 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
 using TicketFlow.Infrastructure.Caching;
+using TicketFlow.Tests.Integration.Infrastructure;
 
-namespace TicketFlow.Tests.Caching;
+namespace TicketFlow.Tests.Integration.Caching;
 
+[Collection(IntegrationTestsCollection.Name)]
 public class RedisCacheServiceTests : IAsyncDisposable
 {
     private readonly ServiceProvider _provider;
     private readonly RedisCacheService _cacheService;
 
-    public RedisCacheServiceTests()
+    public RedisCacheServiceTests(IntegrationTestFixture fixture)
     {
         var services = new ServiceCollection();
-        services.AddStackExchangeRedisCache(options => options.Configuration = "localhost:6379");
-
+        services.AddStackExchangeRedisCache(options => options.Configuration = fixture.GetRedisConnectionString());
         _provider = services.BuildServiceProvider(validateScopes: true);
         var distributedCache = _provider.GetRequiredService<IDistributedCache>();
         _cacheService = new RedisCacheService(distributedCache);

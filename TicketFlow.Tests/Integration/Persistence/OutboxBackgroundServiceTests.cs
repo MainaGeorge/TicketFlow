@@ -11,10 +11,11 @@ using TicketFlow.Domain.Common;
 using TicketFlow.Domain.Events;
 using TicketFlow.Infrastructure.Persistence;
 using TicketFlow.Infrastructure.Persistence.Outbox;
+using TicketFlow.Tests.Integration.Infrastructure;
 
 namespace TicketFlow.Tests.Integration.Persistence;
 
-public class OutboxBackgroundServiceTests
+public class OutboxBackgroundServiceTests(IntegrationTestFixture sqlServer) : IntegrationTestsBase(sqlServer)
 {
     [Fact]
     public async Task ExecuteAsync_WhenOutboxMessageExists_ProcessesMessage()
@@ -27,7 +28,7 @@ public class OutboxBackgroundServiceTests
             .Callback(() => messageDispatched.TrySetResult())
             .Returns(Task.CompletedTask);
 
-        await using var baseFactory = new CustomWebApplicationFactory();
+        await using var baseFactory = CreateFactory();
 
         await using var factory = baseFactory
             .WithWebHostBuilder(builder =>

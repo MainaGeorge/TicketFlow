@@ -34,7 +34,7 @@ public class LoggingBehaviourTests
             x => x.Log(
                 logLevel: LogLevel.Information,
                 eventId: It.IsAny<EventId>(),
-                state: It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains(nameof(TestRequest))),
+                state: It.Is<It.IsAnyType>((state, _) => state!.ToString()!.Contains(nameof(TestRequest))),
                 exception: It.IsAny<Exception?>(),
                 formatter: It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Exactly(2));
@@ -43,7 +43,7 @@ public class LoggingBehaviourTests
             x => x.Log(
                 logLevel: LogLevel.Information,
                 eventId: It.IsAny<EventId>(),
-                state: It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains($"About to start handling {nameof(TestRequest)}")),
+                state: It.Is<It.IsAnyType>((state, _) => state!.ToString()!.Contains($"About to start handling {nameof(TestRequest)}")),
                 exception: It.IsAny<Exception?>(),
                 formatter: It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
@@ -52,7 +52,7 @@ public class LoggingBehaviourTests
             x => x.Log(
                 logLevel: LogLevel.Information,
                 eventId: It.IsAny<EventId>(),
-                state: It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains($"Finished handling {nameof(TestRequest)}")),
+                state: It.Is<It.IsAnyType>((state, _) => state!.ToString()!.Contains($"Finished handling {nameof(TestRequest)}")),
                 exception: It.IsAny<Exception?>(),
                 formatter: It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
@@ -74,7 +74,7 @@ public class LoggingBehaviourTests
             x => x.Log(
                 logLevel: LogLevel.Information,
                 eventId: It.IsAny<EventId>(),
-                state: It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains(nameof(TestRequest))),
+                state: It.Is<It.IsAnyType>((state, _) => state!.ToString()!.Contains(nameof(TestRequest))),
                 exception: It.IsAny<Exception?>(),
                 formatter: It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Exactly(1));
@@ -83,7 +83,7 @@ public class LoggingBehaviourTests
             x => x.Log(
                 logLevel: LogLevel.Information,
                 eventId: It.IsAny<EventId>(),
-                state: It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains($"About to start handling {nameof(TestRequest)}")),
+                state: It.Is<It.IsAnyType>((state, _) => state!.ToString()!.Contains($"About to start handling {nameof(TestRequest)}")),
                 exception: It.IsAny<Exception?>(),
                 formatter: It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);

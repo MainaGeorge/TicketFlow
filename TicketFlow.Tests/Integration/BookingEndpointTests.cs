@@ -3,15 +3,16 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Json;
 using TicketFlow.Infrastructure.Persistence;
+using TicketFlow.Tests.Integration.Infrastructure;
 
 namespace TicketFlow.Tests.Integration;
 
-public class BookingEndpointTests
+public class BookingEndpointTests(IntegrationTestFixture sqlServerFixture) : IntegrationTestsBase(sqlServerFixture)
 {
     [Fact]
     public async Task CreateBooking_WithValidRequest_Returns201()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
         var (userToken, eventId, seatId) = await CreateUserAndSeat(factory, client);
         TestHelpers.SetBearerToken(client, userToken);
@@ -23,7 +24,7 @@ public class BookingEndpointTests
     [Fact]
     public async Task CreateBooking_WithoutJwt_Returns401()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
         var response = await client.PostAsJsonAsync("/api/bookings", new { seatId = 1 });
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -33,7 +34,7 @@ public class BookingEndpointTests
     [Fact]
     public async Task CreateBooking_WithUnknownSeat_Returns404()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
         var token = await TestHelpers.RegisterAndLoginAsAdmin(factory, client, "user@test.com");
         TestHelpers.SetBearerToken(client, token);
@@ -46,7 +47,7 @@ public class BookingEndpointTests
     [Fact]
     public async Task CreateBooking_WithSeatFromAnotherEvent_Returns404()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
         var token = await TestHelpers.RegisterAndLoginAsAdmin(factory, client, "user@test.com");
         TestHelpers.SetBearerToken(client, token);
@@ -76,7 +77,7 @@ public class BookingEndpointTests
     [Fact]
     public async Task CreateBooking_WithUnknownEvent_Returns404()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
         var token = await TestHelpers.RegisterAndLogin(client, "user@test.com");
         TestHelpers.SetBearerToken(client, token);
@@ -88,7 +89,7 @@ public class BookingEndpointTests
     [Fact]
     public async Task CreateBooking_WithAlreadyBookedSeat_Returns409()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
         var (user1Token, eventId, seatId) = await CreateUserAndSeat(factory, client, "user1@test.com");
         TestHelpers.SetBearerToken(client, user1Token);
@@ -104,7 +105,7 @@ public class BookingEndpointTests
     [Fact]
     public async Task GetMyBookings_ReturnsCurrentUsersBookings()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
         var (token, eventId, seatId) = await CreateUserAndSeat(factory, client);
         TestHelpers.SetBearerToken(client, token);
@@ -124,7 +125,7 @@ public class BookingEndpointTests
     [Fact]
     public async Task GetBooking_OtherUsersBooking_DoesNotReturnBooking()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
 
         // User 1 creates a booking.
@@ -149,7 +150,7 @@ public class BookingEndpointTests
     [Fact]
     public async Task CreateBooking_WithoutSeatId_Returns400()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
         var token = await TestHelpers.RegisterAndLogin(client, "user@test.com");
         TestHelpers.SetBearerToken(client, token);
@@ -165,7 +166,7 @@ public class BookingEndpointTests
     [InlineData(0)]
     public async Task CreateBooking_WithInvalidSeatId_Returns400(int seatId)
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
         var token = await TestHelpers.RegisterAndLogin(client, "user@test.com");
         TestHelpers.SetBearerToken(client, token);
@@ -179,7 +180,7 @@ public class BookingEndpointTests
     [Fact]
     public async Task CreateBooking_ConcurrentlyForSameSeat_OnlyOneSucceeds()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var setupClient = factory.CreateClient();
 
         // Create the seat first.

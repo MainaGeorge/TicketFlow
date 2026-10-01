@@ -2,11 +2,11 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using System.Net.Http.Json;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using TicketFlow.Tests.Integration.Infrastructure;
 
 namespace TicketFlow.Tests.Integration;
 
-public class SeatEndpointsTests
+public class SeatEndpointsTests(IntegrationTestFixture sqlServerFixture) : IntegrationTestsBase(sqlServerFixture)
 {
     private static async Task<int> CreateEvent(
         CustomWebApplicationFactory factory, HttpClient client)
@@ -22,7 +22,7 @@ public class SeatEndpointsTests
     [Fact]
     public async Task CreateSeat_WithValidRequest_Returns201()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
         var eventId = await CreateEvent(factory, client);
         var payload = new
@@ -44,7 +44,7 @@ public class SeatEndpointsTests
     [Fact]
     public async Task CreateSeat_WithZeroNumber_Returns400()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
         var eventId = await CreateEvent(factory, client);
         var payload = new
@@ -66,7 +66,7 @@ public class SeatEndpointsTests
     [Fact]
     public async Task CreateSeat_WithNegativeNumber_Returns400()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
         var eventId = await CreateEvent(factory, client);
         var payload = new
@@ -88,7 +88,7 @@ public class SeatEndpointsTests
     [Fact]
     public async Task CreateSeat_WithNegativePrice_Returns400()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
         var eventId = await CreateEvent(factory, client);
         var payload = new
@@ -110,7 +110,7 @@ public class SeatEndpointsTests
     [Fact]
     public async Task CreateSeat_WithMissingRow_Returns400()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
         var eventId = await CreateEvent(factory, client);
         var payload = new
@@ -132,7 +132,7 @@ public class SeatEndpointsTests
     [Fact]
     public async Task CreateSeat_WithUnknownEvent_Returns404()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
         var token = await TestHelpers.RegisterAndLoginAsAdmin(factory, client, "test@user.com");
         TestHelpers.SetBearerToken(client, token);
@@ -155,7 +155,7 @@ public class SeatEndpointsTests
     [Fact]
     public async Task WhenPriceIsInvalid_ReturnsBadRequestWithValidationErrors()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
         var eventId = await CreateEvent(factory, client);
         var payload = new

@@ -8,15 +8,16 @@ using TicketFlow.Application.Authentication.Models;
 using TicketFlow.Domain.Entities;
 using TicketFlow.Domain.Events;
 using TicketFlow.Infrastructure.Persistence;
+using TicketFlow.Tests.Integration.Infrastructure;
 
 namespace TicketFlow.Tests.Integration.Persistence;
 
-public class AppDbContextTests
+public class AppDbContextTests(IntegrationTestFixture sqlServer) : IntegrationTestsBase(sqlServer)
 {
     [Fact]
     public async Task SaveChangesAsync_WhenEntityHasDomainEvents_PersistsOutboxMessage()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var source = new CancellationTokenSource();
         var token = source.Token;
         string? userId = null;
@@ -75,7 +76,7 @@ public class AppDbContextTests
     {
         using var source = new CancellationTokenSource();
         var token = source.Token;
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
 
         await using var scope = factory.Services.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();

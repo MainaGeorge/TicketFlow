@@ -1,14 +1,15 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
+using TicketFlow.Tests.Integration.Infrastructure;
 
 namespace TicketFlow.Tests.Integration;
-
-public class EventEndpointTests
+ 
+public class EventEndpointTests(IntegrationTestFixture sqlServerFixture) : IntegrationTestsBase(sqlServerFixture)
 {
     [Fact]
     public async Task CreateEvent_WithoutAuthentication_Returns401()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/events", new { name = "Rock Concert", venue = "London Arena", eventDate = DateTime.UtcNow.AddDays(30) });
@@ -19,7 +20,7 @@ public class EventEndpointTests
     [Fact]
     public async Task CreateEvent_AsUser_Returns403()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
 
         var token = await TestHelpers.RegisterAndLogin(client, "test@user.com");
@@ -33,7 +34,7 @@ public class EventEndpointTests
     [Fact]
     public async Task CreateEvent_WithValidRequest_Returns201()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
 
         var token = await TestHelpers.RegisterAndLoginAsAdmin(factory, client, "test@user.com");
@@ -47,7 +48,7 @@ public class EventEndpointTests
     [Fact]
     public async Task CreateEvent_WithEmptyName_Returns400()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
 
         var token = await TestHelpers.RegisterAndLoginAsAdmin(factory, client, "test@user.com");
@@ -61,7 +62,7 @@ public class EventEndpointTests
     [Fact]
     public async Task CreateEvent_WithEmptyVenue_Returns400()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
 
         var token = await TestHelpers.RegisterAndLoginAsAdmin(factory, client, "test@user.com");
@@ -75,7 +76,7 @@ public class EventEndpointTests
     [Fact]
     public async Task CreateEvent_WithPastDate_Returns400()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
 
         var token = await TestHelpers.RegisterAndLoginAsAdmin(factory, client, "test@user.com");
@@ -88,7 +89,7 @@ public class EventEndpointTests
     [Fact]
     public async Task GetEvent_WithUnknownId_Returns404()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
 
         var response = await client.GetAsync("/api/events/999999");
@@ -99,7 +100,7 @@ public class EventEndpointTests
     [Fact]
     public async Task GetEvents_WithCreatedEvent_Returns200()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
 
         var token = await TestHelpers.RegisterAndLoginAsAdmin(factory, client, "test@user.com");
@@ -119,7 +120,7 @@ public class EventEndpointTests
     [InlineData("/api/events/1")]
     public async Task GetEvents_WithoutCredentials_Returns200IfEventsExist(string url)
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         using var client = factory.CreateClient();
 
         var token = await TestHelpers.RegisterAndLoginAsAdmin(factory, client, "test@user.com");

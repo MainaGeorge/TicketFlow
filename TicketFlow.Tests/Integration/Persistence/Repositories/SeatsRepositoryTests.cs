@@ -7,10 +7,11 @@ using TicketFlow.Domain.Entities;
 using TicketFlow.Infrastructure.Persistence;
 using TicketFlow.Infrastructure.Persistence.Outbox;
 using TicketFlow.Infrastructure.Persistence.Repositories;
+using TicketFlow.Tests.Integration.Infrastructure;
 
 namespace TicketFlow.Tests.Integration.Persistence.Repositories;
 
-public class SeatsRepositoryTests
+public class SeatsRepositoryTests(IntegrationTestFixture fixture) : IntegrationTestsBase(fixture)
 {
     [Fact]
     public async Task CreateSeatsAsync_WhenOneSeatIsDuplicateInPayload_DoesNotPersistAnySeats()
@@ -19,7 +20,7 @@ public class SeatsRepositoryTests
         var @event = new Event { Name = "Rock Concert", Venue = "London Arena", EventDate = DateTime.UtcNow.AddDays(30) };
         int eventId;
 
-        await using var baseFactory = new CustomWebApplicationFactory();
+        await using var baseFactory = CreateFactory();
 
         await using var factory = baseFactory
             .WithWebHostBuilder(builder =>
@@ -69,7 +70,7 @@ public class SeatsRepositoryTests
         var @event = new Event { Name = "Rock Concert", Venue = "London Arena", EventDate = DateTime.UtcNow.AddDays(30) };
         int eventId;
 
-        await using var baseFactory = new CustomWebApplicationFactory();
+        await using var baseFactory = CreateFactory();
 
         await using var factory = baseFactory
             .WithWebHostBuilder(builder =>
@@ -124,7 +125,7 @@ public class SeatsRepositoryTests
         int event1Id;
         int event2Id;
 
-        await using var baseFactory = new CustomWebApplicationFactory();
+        await using var baseFactory = CreateFactory();
         await using var factory = baseFactory
             .WithWebHostBuilder(builder =>
             {
@@ -200,7 +201,7 @@ public class SeatsRepositoryTests
         int event1Id;
         int event2Id;
 
-        await using var baseFactory = new CustomWebApplicationFactory();
+        await using var baseFactory = CreateFactory();
 
         await using var factory = baseFactory
             .WithWebHostBuilder(builder =>
@@ -254,7 +255,7 @@ public class SeatsRepositoryTests
         int event1Id;
         int event2Id;
 
-        await using var baseFactory = new CustomWebApplicationFactory();
+        await using var baseFactory = CreateFactory();
         await using var factory = baseFactory
             .WithWebHostBuilder(builder =>
             {
@@ -346,7 +347,7 @@ public class SeatsRepositoryTests
         var @event = new Event { Name = "Rock Concert", Venue = "London Arena", EventDate = DateTime.UtcNow.AddDays(30) };
         int eventId;
 
-        await using var baseFactory = new CustomWebApplicationFactory();
+        await using var baseFactory = CreateFactory();
 
         await using var factory = baseFactory
             .WithWebHostBuilder(builder =>
@@ -409,7 +410,7 @@ public class SeatsRepositoryTests
         var @event = new Event { Name = "Rock Concert", Venue = "London Arena", EventDate = DateTime.UtcNow.AddDays(30) };
         int eventId;
 
-        await using var baseFactory = new CustomWebApplicationFactory();
+        await using var baseFactory = CreateFactory();
 
         await using var factory = baseFactory
             .WithWebHostBuilder(builder =>

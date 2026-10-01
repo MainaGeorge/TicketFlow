@@ -3,16 +3,16 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System.Net;
 using System.Text.Json;
 using TicketFlow.Presentation.Health;
-using TicketFlow.Tests.Integration;
+using TicketFlow.Tests.Integration.Infrastructure;
 
 namespace TicketFlow.Tests.Presentation.HealthChecks;
 
-public class HealthCheckEndpointTests
+public class HealthCheckEndpointTests(IntegrationTestFixture sqlServer) : IntegrationTestsBase(sqlServer)
 {
     [Fact]
     public async Task HealthLive_WhenApplicationIsRunning_ReturnsOk()
     {
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         var client = factory.CreateClient();
 
         var response = await client.GetAsync("/health/live");

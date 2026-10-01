@@ -8,17 +8,18 @@ using TicketFlow.Domain.Entities;
 using TicketFlow.Infrastructure.Persistence;
 using TicketFlow.Infrastructure.Persistence.Outbox;
 using TicketFlow.Infrastructure.Persistence.Repositories;
+using TicketFlow.Tests.Integration.Infrastructure;
 
 namespace TicketFlow.Tests.Integration.Persistence.Repositories;
 
-public class BookingRepositoryTests
+public class BookingRepositoryTests(IntegrationTestFixture fixture) : IntegrationTestsBase(fixture)
 {
     [Fact]
     public async Task SaveCreatedBookingAsync_WhenBookingIsValid_PersistsBookingAndIntegrationEventOutboxMessage()
     {
         var email = "test@user.com";
 
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
         await using (var createEventAndSeatScope = factory.Services.CreateAsyncScope())
         {
             var context = createEventAndSeatScope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -71,7 +72,7 @@ public class BookingRepositoryTests
     public async Task SaveCreatedBookingAsync_WhenSeatIsAlreadyBooked_ThrowsSeatAlreadyBookedException()
     {
         var email = "test@user.com";
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
 
         await using (var createEventAndSeatScope = factory.Services.CreateAsyncScope())
         {
@@ -143,7 +144,7 @@ public class BookingRepositoryTests
         var email = "test@user.com";
         var email2 = "test2@user.com";
 
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
 
         await using (var createEventAndSeatScope = factory.Services.CreateAsyncScope())
         {
@@ -200,7 +201,7 @@ public class BookingRepositoryTests
     public async Task GetSeatForBookingAsync_WhenSeatBelongsToDifferentEvent_ReturnsNull()
     {
         var wrongEventName = "Black Friday Sales";
-        await using var factory = new CustomWebApplicationFactory();
+        await using var factory = CreateFactory();
 
         await using (var createEventAndSeatScope = factory.Services.CreateAsyncScope())
         {
