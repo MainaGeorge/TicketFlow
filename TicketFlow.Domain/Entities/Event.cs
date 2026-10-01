@@ -1,8 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿namespace TicketFlow.Domain.Entities;
 
-namespace TicketFlow.Domain.Entities;
-
-public class Event
+public class Event : Entity
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;

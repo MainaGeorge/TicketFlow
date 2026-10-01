@@ -1,5 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
-using TicketFlow.Application.Seats.Interfaces;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using TicketFlow.Application.Abstractions.Repositories;
+using TicketFlow.Application.Seats.Exceptions;
 using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Infrastructure.Persistence.Repositories;
@@ -12,6 +14,22 @@ public class SeatsRepository(AppDbContext context) : ISeatsRepository
         await context.SaveChangesAsync(cancellationToken);
 
         return seat;
+    }
+
+    public async Task<IEnumerable<Seat>> CreateSeatsAsync(IEnumerable<Seat> seats, CancellationToken cancellationToken = default)
+    {
+        context.Seats.AddRange(seats);
+
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is SqlException sql && sql.Number is 2601 or 2627)
+        {
+            throw new DuplicateSeatException();
+        }
+
+        return seats;
     }
 
     public async Task<Seat?> GetSeatAsync(int eventId, int seatId, CancellationToken cancellationToken = default)

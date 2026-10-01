@@ -1,18 +1,26 @@
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
+using MassTransit.Logging;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Serilog;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Security.Claims;
-using TicketFlow.Presentation.Exceptions;
-using TicketFlow.Presentation.Swagger;
-using TicketFlow.Infrastructure;
 using TicketFlow.Application;
-using TicketFlow.Infrastructure.Persistence;
 using TicketFlow.Application.Common.DependencyInjection;
+using TicketFlow.Infrastructure;
+using TicketFlow.Infrastructure.Health;
+using TicketFlow.Infrastructure.Observability;
+using TicketFlow.Infrastructure.Persistence;
+using TicketFlow.Presentation.Exceptions;
+using TicketFlow.Presentation.Health;
+using TicketFlow.Presentation.Swagger;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,6 +63,11 @@ builder
 builder
     .Services
     .AddInfrastructure(builder.Configuration);
+
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddMessaging(builder.Configuration);
+}
 
 builder
     .Services
@@ -107,20 +120,41 @@ builder.Services.AddSwaggerGen(options =>
             Scheme = "bearer",
             BearerFormat = "JWT",
             In = ParameterLocation.Header,
-            Description =
-                "Enter your JWT bearer token."
+            Description = "Enter your JWT bearer token."
         });
 
     options.AddSecurityRequirement(document =>
         new OpenApiSecurityRequirement
         {
-            [new OpenApiSecuritySchemeReference(
-                "Bearer",
-                document)] = []
+            [new OpenApiSecuritySchemeReference("Bearer", document)] = []
         });
 });
 
 builder.Services.AddJwtSettings(builder.Configuration);
+
+builder.Services
+    .AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService("TicketFlow.Api"))
+    .WithMetrics(metrics =>
+    {
+        metrics
+        .AddMeter(TicketFlowTelemetry.SourceName);
+    })
+    .WithTracing(tracing =>
+    {
+        tracing
+        .AddSource(TicketFlowTelemetry.SourceName)
+        .AddSource(DiagnosticHeaders.DefaultListenerName)
+        .AddRedisInstrumentation()
+        .AddAspNetCoreInstrumentation()
+        .AddSqlClientInstrumentation()
+        .AddOtlpExporter();
+    });
+
+builder.Services
+    .AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>(name: "sql", tags: ["ready"])
+    .AddCheck<RedisHealthCheck>(name: "redis", tags: ["dependencies"]);
 
 var app = builder.Build();
 
@@ -138,6 +172,8 @@ app.UseSerilogRequestLogging(options =>
 if (app.Environment.IsDevelopment())
 {
     await app.ApplyMigrationsAsync();
+    await app.SeedRoles();
+    await app.SeedAdmin(builder.Configuration);
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
@@ -154,5 +190,18 @@ app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = HealthCheckResponseWriter.WriteResponse
+});
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false
+});
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+});
 app.Run();

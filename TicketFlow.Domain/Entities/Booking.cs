@@ -1,12 +1,28 @@
 ﻿namespace TicketFlow.Domain.Entities;
 
-public class Booking
+public class Booking : Entity
 {
-    public int Id { get; set; }
-    public string UserId { get; set; } = string.Empty;
-    public User User { get; set; } = null!;
-    public int SeatId { get; set; }
-    public Seat Seat { get; set; } = null!;
-    public DateTime CreatedAt { get; set; }
-    public string PaymentReference { get; set; } = string.Empty;
+    private Booking() 
+    {
+    }
+
+    public int Id { get; private set; }
+    public string UserId { get; private set; } = string.Empty;
+    public User User { get; private set; } = null!;
+    public int SeatId { get; private set; }
+    public Seat Seat { get; private set; } = null!;
+    public DateTime CreatedAt { get; private set; }
+    public string PaymentReference { get; private set; } = string.Empty;
+
+    public static Booking Create(string userid, int seatId, DateTime createdAt)
+    {
+        var booking = new Booking
+        {
+            UserId = userid,
+            SeatId = seatId,
+            CreatedAt = createdAt
+        };
+
+        return booking;
+    }
 }
