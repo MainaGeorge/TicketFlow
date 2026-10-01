@@ -1,13 +1,19 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
 using System.Security.Claims;
-using TicketFlow.Application.Events.Interfaces;
+using TicketFlow.Application.Events.Commands.CreateEvent;
 using TicketFlow.Application.Events.Models;
-using TicketFlow.Application.Seats;
-using TicketFlow.Application.Seats.Interfaces;
-using TicketFlow.Contracts.DTOs;
+using TicketFlow.Application.Events.Queries.GetEvent;
+using TicketFlow.Application.Seats.Commands;
+using TicketFlow.Application.Seats.Models;
+using TicketFlow.Application.Seats.Queries.GetEventSeats;
+using TicketFlow.Application.Seats.Queries.GetSeat;
+using TicketFlow.Contracts.Booking;
+using TicketFlow.Contracts.Events;
+using TicketFlow.Contracts.Seats;
 using TicketFlow.Domain.Entities;
 using TicketFlow.Presentation.Controllers;
 
@@ -15,9 +21,8 @@ namespace TicketFlow.Tests.Presentation.Controllers;
 
 public class EventsControllerTests
 {
-    private readonly Mock<ISeatsService> _mockSeatsService;
-    private readonly Mock<IEventsService> _mockEventsService;
     private readonly Mock<ILogger<EventsController>> _logger;
+    private readonly Mock<ISender> _sender;
     private readonly EventsController _controller;
     private const string userId = "abc-123";
 
@@ -33,11 +38,10 @@ public class EventsControllerTests
 
     public EventsControllerTests()
     {
-        _mockEventsService = new Mock<IEventsService>();
-        _mockSeatsService = new Mock<ISeatsService>();
         _logger = new Mock<ILogger<EventsController>>();
+        _sender = new Mock<ISender>();
 
-        _controller = new EventsController(_mockEventsService.Object, _mockSeatsService.Object, _logger.Object);
+        _controller = new EventsController(_sender.Object, _logger.Object);
 
         SetAuthorisation(userId);
     }
@@ -57,14 +61,14 @@ public class EventsControllerTests
         var result = await _controller.CreateEvent(request, CancellationToken.None);
 
         Assert.IsType<UnauthorizedObjectResult>(result);
-        _mockEventsService.Verify(x => x.CreateEventAsync(It.IsAny<Event>(), It.IsAny<string>()), Times.Never());
+        _sender.Verify(x => x.Send(It.IsAny<CreateEventCommand>(), It.IsAny<CancellationToken>()), Times.Never());
     }
 
     [Fact]
     public async Task CreatedEvent_WhenCreated_Returns201()
     {
-        _mockEventsService
-            .Setup(x => x.CreateEventAsync(It.IsAny<Event>(), userId, It.IsAny<CancellationToken>()))
+        _sender
+            .Setup(x => x.Send(It.IsAny<CreateEventCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new EventCreatedResult(new Event() { Id = 10 }));
 
         var request = new CreateEventRequest
@@ -85,16 +89,23 @@ public class EventsControllerTests
     [Fact]
     public async Task CreatedEvent_WhenEventIsInPast_Returns400()
     {
-        _mockEventsService
-            .Setup(x => x.CreateEventAsync(It.IsAny<Event>(), userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PastEventResult(null));
-
         var request = new CreateEventRequest
         {
             Name = "Test Event",
             Venue = "Arena",
             EventDate = DateTime.UtcNow.AddDays(-3)
         };
+
+        var @event = new Event
+        {
+            Name = "Test Event",
+            Venue = "Arena",
+            EventDate = DateTime.UtcNow.AddDays(-3)
+        };
+
+        _sender
+             .Setup(x => x.Send(It.IsAny<CreateEventCommand>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync(new PastEventResult(@event));
 
         var result = await _controller.CreateEvent(request, CancellationToken.None);
 
@@ -108,9 +119,9 @@ public class EventsControllerTests
     [Fact]
     public async Task GetEventById_WhenNotFound_Returns400()
     {
-        _mockEventsService
-            .Setup(x => x.GetEventAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new EventNotFoundResult(null));
+        _sender
+            .Setup(x => x.Send(It.IsAny<GetEventQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EventNotFoundResult());
 
         var result = await _controller.GetEventById(10, CancellationToken.None);
 
@@ -124,9 +135,10 @@ public class EventsControllerTests
     [Fact]
     public async Task GetEventById_WhenEventExists_Returns200()
     {
-        _mockEventsService
-            .Setup(x => x.GetEventAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+        _sender
+            .Setup(x => x.Send(It.IsAny<GetEventQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new EventResult(new Event()));
+
 
         var result = await _controller.GetEventById(10, CancellationToken.None);
 
@@ -137,9 +149,9 @@ public class EventsControllerTests
     [Fact]
     public async Task GetAllEvents_AlwaysReturns200()
     {
-        _mockEventsService
-            .Setup(x => x.GetAllEventsAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
+        _sender
+            .Setup(x => x.Send(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Enumerable.Empty<CreateBookingRequest>);
 
         var result = await _controller.GetAllEvents(CancellationToken.None);
 
@@ -148,16 +160,15 @@ public class EventsControllerTests
     }
 
     [Fact]
-    public async Task CreateTask_WhenNotAuthenticated_Returns401()
+    public async Task CreateSeat_WhenNotAuthenticated_Returns401()
     {
         _controller.ControllerContext = new ControllerContext {  HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity()) }  };
 
-        var request = new CreateSeatRequest { Row = "A", Number = 1, Price = 200 };
-
+        var request = new CreateSeatsRequest { Seats = [new CreateSeatRequest { Number = 1, Price = 200, Row = "A" }]  };
         var result = await _controller.CreateSeat(1, request, CancellationToken.None);
 
         Assert.IsType<UnauthorizedObjectResult>(result);
-        _mockSeatsService.Verify(x => x.CreateSeatAsync(It.IsAny<int>(), It.IsAny<Seat>(), It.IsAny<CancellationToken>()), Times.Never());
+        _sender.Verify(x => x.Send(It.IsAny<CreateSeatsCommand>(), It.IsAny<CancellationToken>()), Times.Never());
     }
 
     [Fact]
@@ -166,29 +177,27 @@ public class EventsControllerTests
         var seatId = 100;
         var eventId = 4;
 
-        _mockSeatsService
-            .Setup(x => x.CreateSeatAsync(It.IsAny<int>(), It.IsAny<Seat>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SeatCreatedResult(new Seat { Id = seatId }));
+        _sender.Setup(x => x.Send(It.IsAny<CreateSeatsCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SeatsCreatedResult([new Seat { Id = seatId }]));
 
-        var request = new CreateSeatRequest { Row = "A", Number = 1, Price = 200 };
+        var request = new CreateSeatsRequest { Seats = [new CreateSeatRequest { Number = 1, Price = 200, Row = "A" }] };
+
 
         var result = await _controller.CreateSeat(eventId, request, CancellationToken.None);
 
         var created = Assert.IsType<CreatedAtActionResult>(result);
-        Assert.Equal(nameof(EventsController.GetSeat), created.ActionName);
+        Assert.Equal(nameof(EventsController.GetSeats), created.ActionName);
         Assert.Equal(4, created.RouteValues!["eventId"]);
-        Assert.Equal(100, created.RouteValues!["seatId"]);
     }
 
     [Fact]
     public async Task CratedSeat_WhenEventNotExists_Returns404()
     {
-        _mockSeatsService
-            .Setup(x => x.CreateSeatAsync(It.IsAny<int>(), It.IsAny<Seat>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new EventNotFoundForSeatResult(null));
+        _sender
+            .Setup(x => x.Send(It.IsAny<CreateSeatsCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EventNotFoundForSeatResult());
 
-        var request = new CreateSeatRequest { Row = "A", Number = 1, Price = 200 };
-
+        var request = new CreateSeatsRequest { Seats = [new CreateSeatRequest { Number = 1, Price = 200, Row = "A" }] };
         var result = await _controller.CreateSeat(1, request, CancellationToken.None);
         var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
         var problem = Assert.IsType<ProblemDetails>(notFoundResult.Value);
@@ -200,8 +209,8 @@ public class EventsControllerTests
     [Fact]
     public async Task GetSeats_AlwaysReturns200()
     {
-        _mockSeatsService
-            .Setup(x => x.GetSeatsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+        _sender
+            .Setup(x => x.Send(It.IsAny<GetEventSeatsQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         var result = await _controller.GetSeats(4, CancellationToken.None);
@@ -213,9 +222,9 @@ public class EventsControllerTests
     [Fact]
     public async Task GetSeat_WhenSeatNotFound_Returns404()
     {
-        _mockSeatsService
-            .Setup(x => x.GetSeatAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SeatNotFound(null));
+        _sender
+            .Setup(x => x.Send(It.IsAny<GetSeatQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SeatNotFound());
 
         var result = await _controller.GetSeat(1, 4, CancellationToken.None);
 
@@ -231,8 +240,8 @@ public class EventsControllerTests
     {
         var seatId = 4;
 
-        _mockSeatsService
-            .Setup(x => x.GetSeatAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+        _sender
+            .Setup(x => x.Send(It.IsAny<GetSeatQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SeatResult(new Seat { Id = seatId }));
 
         var result = await _controller.GetSeat(1, 4, CancellationToken.None);

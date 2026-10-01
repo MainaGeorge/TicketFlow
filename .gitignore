@@ -32,7 +32,8 @@ publish/
 ._*
 
 # Custom folder icons
-Icon
+Icon
+
 
 # Volume root files
 .DocumentRevisions-V100
@@ -132,3 +133,4 @@ x86/
 
 # Built Visual Studio Code Extensions
 *.vsix
+.env

@@ -1,10 +1,13 @@
 ﻿using Asp.Versioning;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using TicketFlow.Application.Bookings.Interfaces;
+using TicketFlow.Application.Bookings.Commands.CreateBooking;
 using TicketFlow.Application.Bookings.Models;
-using TicketFlow.Contracts.DTOs;
+using TicketFlow.Application.Bookings.Queries.GetBooking;
+using TicketFlow.Application.Bookings.Queries.GetUserBookings;
+using TicketFlow.Contracts.Booking;
 using TicketFlow.Presentation.Mappings;
 
 namespace TicketFlow.Presentation.Controllers;
@@ -13,23 +16,28 @@ namespace TicketFlow.Presentation.Controllers;
 [Authorize]
 [ApiVersion("1.0")]
 [ApiController]
-public class BookingsController(IBookingService bookingService, ILogger<BookingsController> logger) : ControllerBase
+public class TestController(ISender sender, ILogger<TestController> logger) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> CreateBooking([FromBody] CreateBookingRequest bookingRequest, CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (userId is null)
+        if (string.IsNullOrWhiteSpace(userId))
         {
             logger.LogWarning("Booking request without authenticated user.");
-            return Unauthorized();
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized.",
+                Detail = "You must be logged in to create a booking.",
+                Instance = HttpContext.Request.Path
+            });
         }
 
-        if (userId is null)
-            return Unauthorized();
+        var createBookingCommand = new CreateBookingCommand(bookingRequest.EventId, bookingRequest.SeatId, userId);
 
-        var result = await bookingService.CreateBookingAsync(userId, bookingRequest.SeatId!.Value, cancellationToken);
+        var result = await sender.Send(createBookingCommand, cancellationToken);
 
 
         return result switch
@@ -37,7 +45,7 @@ public class BookingsController(IBookingService bookingService, ILogger<Bookings
             BookingCreated created =>
                 CreatedAtAction(
                     nameof(GetBooking),
-                    new { id = created.Booking!.Id },
+                    new { id = created.Id },
                     created.MapToBookingDto(userId)),
 
             BookingSeatNotFound =>
@@ -47,6 +55,16 @@ public class BookingsController(IBookingService bookingService, ILogger<Bookings
                     Status = StatusCodes.Status404NotFound,
                     Title = "Seat not found.",
                     Detail = $"Seat {bookingRequest.SeatId} not found.",
+                    Instance = HttpContext.Request.Path
+                }),
+
+            BookingEventNotFound =>
+                NotFound(
+                new ProblemDetails
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Title = "Booking event not found.",
+                    Detail = $"Event {bookingRequest.EventId} not found.",
                     Instance = HttpContext.Request.Path
                 }),
 
@@ -79,7 +97,7 @@ public class BookingsController(IBookingService bookingService, ILogger<Bookings
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (userId == null)
+        if (string.IsNullOrWhiteSpace(userId))
         {
             logger.LogWarning("Booking request without authenticated user.");
 
@@ -92,7 +110,9 @@ public class BookingsController(IBookingService bookingService, ILogger<Bookings
             });
         }
 
-        var booking = await bookingService.GetBookingAsync(id, userId, cancellationToken);
+        var bookingQuery = new GetBookingQuery(id, userId);
+
+        var booking = await sender.Send(bookingQuery, cancellationToken);
         return booking switch
         {
             BookingNotFound => NotFound(
@@ -109,11 +129,11 @@ public class BookingsController(IBookingService bookingService, ILogger<Bookings
     }
 
     [HttpGet("my")]
-    public async Task<IActionResult> GetMyBookings()
+    public async Task<IActionResult> GetMyBookings(CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (userId == null)
+        if (string.IsNullOrWhiteSpace(userId))
         {
             logger.LogWarning("Booking request without authenticated user.");
             return Unauthorized(new ProblemDetails
@@ -125,7 +145,7 @@ public class BookingsController(IBookingService bookingService, ILogger<Bookings
             });
         }
 
-        var bookings = await bookingService.GetBookingsAsync(userId);
+        var bookings = await sender.Send(new GetUserBookingsQuery(userId), cancellationToken);
         return Ok(bookings.Select(b => b.MapToBookingDto(userId)));
     }
 }

@@ -1,9 +1,10 @@
 ﻿using TicketFlow.Domain.Entities;
 
-namespace TicketFlow.Application.Seats;
+namespace TicketFlow.Application.Seats.Models;
 
-public abstract record SeatBaseResult(Seat? Seat);
-public sealed record SeatCreatedResult(Seat Seat) : SeatBaseResult(Seat);
-public sealed record SeatResult(Seat Seat) : SeatBaseResult(Seat);
-public sealed record SeatNotFound(Seat? Seat = null) : SeatBaseResult(Seat);
-public sealed record EventNotFoundForSeatResult(Seat? Seat = null) : SeatBaseResult(Seat);
+public abstract record SeatBaseResult;
+public sealed record SeatsCreatedResult(IEnumerable<Seat> Seats) : SeatBaseResult;
+public sealed record SeatResult(Seat Seat) : SeatBaseResult;
+public sealed record SeatNotFound : SeatBaseResult;
+public sealed record EventNotFoundForSeatResult : SeatBaseResult;
+public sealed record DuplicateSeatResult : SeatBaseResult;

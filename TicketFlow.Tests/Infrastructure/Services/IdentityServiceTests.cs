@@ -2,7 +2,7 @@
 using Moq;
 using TicketFlow.Application.Authentication.Models;
 using TicketFlow.Domain.Entities;
-using TicketFlow.Infrastructure.Services;
+using TicketFlow.Infrastructure.Authentication;
 
 namespace TicketFlow.Tests.Infrastructure.Services;
 

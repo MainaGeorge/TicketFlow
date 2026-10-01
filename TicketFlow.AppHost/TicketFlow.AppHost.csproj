@@ -1,0 +1,22 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.6.0">
+
+  <ItemGroup>
+    <ProjectReference Include="..\TicketFlow.Presentation\TicketFlow.Presentation.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.RabbitMQ" Version="13.6.0" />
+    <PackageReference Include="Aspire.Hosting.Redis" Version="13.6.0" />
+    <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.6.0" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AspireUseCliBundle>true</AspireUseCliBundle>
+    <UserSecretsId>2f15759c-22d3-49a5-a234-29ec03f417c1</UserSecretsId>
+  </PropertyGroup>
+
+</Project>

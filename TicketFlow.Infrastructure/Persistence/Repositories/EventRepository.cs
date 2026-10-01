@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using TicketFlow.Application.Events.Interfaces;
+using TicketFlow.Application.Abstractions.Repositories;
 using TicketFlow.Domain.Entities;
 
 namespace TicketFlow.Infrastructure.Persistence.Repositories;
@@ -20,7 +20,7 @@ public class EventRepository(AppDbContext context) : IEventsRepository
             .Events
             .Select(e => new Event 
                 {  
-                    AvailableSeats = e.Seats.Count(s => s.Booking != null),
+                    AvailableSeats = e.Seats.Count(s => s.Booking == null),
                     TotalSeats = e.Seats.Count,
                     EventDate = e.EventDate,
                     Id = e.Id,
@@ -35,7 +35,7 @@ public class EventRepository(AppDbContext context) : IEventsRepository
             .Events
             .Select(e => new Event
             {
-                AvailableSeats = e.Seats.Count(s => s.Booking != null),
+                AvailableSeats = e.Seats.Count(s => s.Booking == null),
                 TotalSeats = e.Seats.Count,
                 EventDate = e.EventDate,
                 Id = e.Id,
