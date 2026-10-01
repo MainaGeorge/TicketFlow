@@ -30,9 +30,15 @@ public static class DependencyInjection
         services.AddScoped<IBookingConfirmationProcessor, BookingConfirmationProcessor>();
         services.AddScoped<IProcessedJobStore, ProcessedJobStore>();
         services.AddOutbox(configuration);
+        services.AddRedis(configuration);
+
+        return services;
+    }
+
+    public static IServiceCollection AddMessaging(this IServiceCollection services, IConfiguration configuration)
+    {
         services.AddMassTransit(configuration);
         services.AddScoped<IIntegrationEventPublisher, MassTransitIntegrationEventPublisher>();
-        services.AddRedis(configuration);
 
         return services;
     }

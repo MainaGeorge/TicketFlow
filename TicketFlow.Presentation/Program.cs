@@ -64,6 +64,11 @@ builder
     .Services
     .AddInfrastructure(builder.Configuration);
 
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddMessaging(builder.Configuration);
+}
+
 builder
     .Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

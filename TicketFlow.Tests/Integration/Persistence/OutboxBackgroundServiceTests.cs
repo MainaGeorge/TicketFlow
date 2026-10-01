@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using System.Text.Json;
+using TicketFlow.Application.Abstractions.Messaging;
 using TicketFlow.Application.ApplicationEvents;
 using TicketFlow.Domain.Common;
 using TicketFlow.Domain.Events;
@@ -20,7 +20,8 @@ public class OutboxBackgroundServiceTests(IntegrationTestFixture sqlServer) : In
     [Fact]
     public async Task ExecuteAsync_WhenOutboxMessageExists_ProcessesMessage()
     {
-        var messageDispatched = new TaskCompletionSource();
+        var messageDispatched = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var publisher = new Mock<IIntegrationEventPublisher>();
         var dispatcher = new Mock<IDomainEventDispatcher>();
 
         dispatcher
@@ -35,16 +36,12 @@ public class OutboxBackgroundServiceTests(IntegrationTestFixture sqlServer) : In
             {
                 builder.ConfigureTestServices(services =>
                 {
-                    services.RemoveAll<IDomainEventDispatcher>();
-                    services.AddScoped(_ => dispatcher.Object);
+                   
+                        services.RemoveAll<IDomainEventDispatcher>();
+                        services.AddScoped(_ => dispatcher.Object);
 
-                    var outboxHostedService = services
-                        .FirstOrDefault(descriptor => descriptor.ServiceType == typeof(IHostedService) && descriptor.ImplementationType == typeof(OutboxBackgroundService));
-
-                    if (outboxHostedService is not null)
-                    {
-                        services.Remove(outboxHostedService);
-                    }
+                        services.RemoveAll<IIntegrationEventPublisher>();
+                        services.AddScoped(_ => publisher.Object);
                 });
             });
 
@@ -70,5 +67,6 @@ public class OutboxBackgroundServiceTests(IntegrationTestFixture sqlServer) : In
         await worker.StopAsync(CancellationToken.None);
 
         dispatcher.Verify(x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), It.IsAny<CancellationToken>()), Times.Once);
+        publisher.Verify(x => x.PublishAsync(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }
