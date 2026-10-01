@@ -9,7 +9,7 @@ services:
 
     environment:
       ASPNETCORE_ENVIRONMENT: "Development"
-      OpenTelemetry__OtlpEndpoint: "http://jaeger:4317"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://jaeger:4317"
       Redis__ConnectionString: "redis:6379"
       ConnectionStrings__DefaultConnection: "Server=sql,1433;Database=TicketFlow;User Id=sa;Password=TicketFlow!Dev2026;TrustServerCertificate=True;"
       RabbitMq__Host: "rabbitmq"
@@ -49,6 +49,7 @@ services:
   rabbitmq:
     image: rabbitmq:management
     environment:
+      ConnectionStrings__RabbitMq: "amqp://ticketflow:TicketFlowRabbit2026@rabbitmq:5672/"
       RABBITMQ_DEFAULT_USER: ticketflow
       RABBITMQ_DEFAULT_PASS: TicketFlowRabbit2026
     ports:

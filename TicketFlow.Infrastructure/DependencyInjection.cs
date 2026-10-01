@@ -99,15 +99,10 @@ public static class DependencyInjection
 
             configurator.UsingRabbitMq((context, rabbitMq) =>
             {
-                rabbitMq.Host(
-                    configuration["RabbitMq:Host"]!,
-                    "/",
-                    host =>
-                    {
-                        host.Username(configuration["RabbitMq:Username"]!);
-                        host.Password(configuration["RabbitMq:Password"]!);
-                    });
+                var rabbitMqConnectionString = configuration.GetConnectionString("RabbitMq") 
+                    ?? throw new InvalidOperationException("ConnectionStrings:RabbitMq is not configured.");
 
+                rabbitMq.Host(new Uri(rabbitMqConnectionString));
                 rabbitMq.ConfigureEndpoints(context);
             });
         });

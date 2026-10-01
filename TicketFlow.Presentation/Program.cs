@@ -143,11 +143,7 @@ builder.Services
         .AddRedisInstrumentation()
         .AddAspNetCoreInstrumentation()
         .AddSqlClientInstrumentation()
-        .AddOtlpExporter(options =>
-        {
-            options.Endpoint = new Uri(builder.Configuration["OpenTelemetry:OtlpEndpoint"]
-                ?? throw new InvalidOperationException("OpenTelemetry:OtlpEndpoint is not configured."));
-        });
+        .AddOtlpExporter();
     });
 
 builder.Services
