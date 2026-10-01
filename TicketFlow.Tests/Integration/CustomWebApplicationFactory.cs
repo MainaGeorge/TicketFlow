@@ -4,7 +4,9 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using TicketFlow.Infrastructure.Persistence;
+using TicketFlow.Infrastructure.Persistence.Outbox;
 
 namespace TicketFlow.Tests.Integration;
 
@@ -41,6 +43,14 @@ public class CustomWebApplicationFactory(string sqlConnectionString, string redi
             using var scope = services.BuildServiceProvider().CreateScope();
 
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            var outboxHostedService = services
+                        .FirstOrDefault(descriptor => descriptor.ServiceType == typeof(IHostedService) && descriptor.ImplementationType == typeof(OutboxBackgroundService));
+
+            if (outboxHostedService is not null)
+            {
+                services.Remove(outboxHostedService);
+            }
 
             dbContext.Database.Migrate();
 
